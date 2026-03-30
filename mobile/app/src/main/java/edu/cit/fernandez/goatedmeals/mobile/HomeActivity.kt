@@ -1,6 +1,9 @@
 package edu.cit.fernandez.goatedmeals.mobile
 
+import android.content.Intent
 import android.os.Bundle
+import android.widget.Button
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.material.bottomnavigation.BottomNavigationView
@@ -19,6 +22,7 @@ class HomeActivity : AppCompatActivity() {
         val sharedPreferences = getSharedPreferences("GoatedMealsPrefs", MODE_PRIVATE)
         val userEmail = sharedPreferences.getString("userEmail", "User")
         tvWelcomeHeader.text = "Welcome,\n$userEmail"
+        val btnLogoutIcon = findViewById<ImageView>(R.id.btnLogoutIcon)
 
         // Listen for clicks on the Bottom Navigation Bar
         bottomNav.setOnItemSelectedListener { item ->
@@ -42,6 +46,20 @@ class HomeActivity : AppCompatActivity() {
                 }
                 else -> false
             }
+        }
+
+        // --- LOGOUT LOGIC ---
+        btnLogoutIcon.setOnClickListener {
+            // 1. Wipe the saved session from memory
+            val editor = sharedPreferences.edit()
+            editor.clear()
+            editor.apply()
+
+            // 2. Teleport back to the Login screen
+            val intent = Intent(this, MainActivity::class.java)
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            startActivity(intent)
+            finish()
         }
     }
 }

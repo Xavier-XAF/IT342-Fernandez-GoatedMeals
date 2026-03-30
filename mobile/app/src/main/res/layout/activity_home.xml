@@ -3,47 +3,69 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#121212"> <LinearLayout
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:layout_above="@id/bottomNavigation"
-    android:orientation="vertical"
-    android:padding="20dp">
+    android:background="#121212">
 
-    <TextView
-        android:id="@+id/tvWelcomeHeader"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Goated Meals!"
-        android:textColor="#00FF66"
-        android:textSize="28sp"
-        android:textStyle="bold"
-        android:layout_marginBottom="16dp"/>
-
-    <EditText
-        android:id="@+id/etSearch"
-        android:layout_width="match_parent"
-        android:layout_height="50dp"
-        android:hint="Search for meals..."
-        android:textColorHint="#A0AEC0"
-        android:textColor="#FFFFFF"
-        android:background="#1E1E1E"
-        android:padding="12dp"
-        android:drawableStart="@drawable/ic_search"
-        android:drawablePadding="10dp"
-        android:inputType="text"
-        android:layout_marginBottom="16dp"/>
-
-    <TextView
-        android:id="@+id/tvMainContent"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:text="The Meal Catalog Grid will go here!"
-        android:textColor="#A0AEC0"
-        android:gravity="center"
-        android:textSize="18sp"/>
+        android:layout_above="@id/bottomNavigation"
+        android:orientation="vertical"
+        android:padding="20dp">
 
-</LinearLayout>
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp">
+
+            <TextView
+                android:id="@+id/tvWelcomeHeader"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentStart="true"
+                android:layout_centerVertical="true"
+                android:text="Welcome,\nUser"
+                android:textColor="#00FF66"
+                android:textSize="24sp"
+                android:textStyle="bold" />
+
+            <ImageView
+                android:id="@+id/btnLogoutIcon"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:padding="12dp"
+                android:src="@drawable/ic_logout"
+                app:tint="#FF5252"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true" />
+        </RelativeLayout>
+
+        <EditText
+            android:id="@+id/etSearch"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:hint="Search for meals..."
+            android:textColorHint="#A0AEC0"
+            android:textColor="#FFFFFF"
+            android:background="#1E1E1E"
+            android:padding="12dp"
+            android:drawableStart="@drawable/ic_search"
+            android:drawablePadding="10dp"
+            android:inputType="text"
+            android:layout_marginBottom="16dp"/>
+
+        <TextView
+            android:id="@+id/tvMainContent"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:text="Home: Meal Catalog Grid will go here!"
+            android:textColor="#A0AEC0"
+            android:gravity="center"
+            android:textSize="18sp"/>
+
+    </LinearLayout>
 
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottomNavigation"
