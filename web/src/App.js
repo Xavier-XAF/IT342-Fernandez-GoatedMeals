@@ -3,6 +3,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
+import AdminDashboard from './pages/AdminDashboard';
+
 
 // 1. THE BOUNCER FOR THE DASHBOARD
 // If they don't have a name in localStorage, kick them to /login
@@ -44,6 +46,9 @@ function App() {
                 <Dashboard />
             </ProtectedRoute>
         } />
+
+        <Route path="/admin/dashboard" element={<AdminDashboard />} />
+        
       </Routes>
     </Router>
   );

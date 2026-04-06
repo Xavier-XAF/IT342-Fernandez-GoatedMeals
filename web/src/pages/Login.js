@@ -13,36 +13,47 @@ const Login = () => {
     const [message, setMessage] = useState('');
     const [isError, setIsError] = useState(false);
 
-    const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
-    };
-
     const handleSubmit = async (e) => {
         e.preventDefault();
 
         try {
-            // Send exact payload to /auth/login
+            // Send exact payload to /auth/login using your apiClient
             const response = await apiClient.post('/auth/login', formData);
             
             setMessage(response.data.message);
             setIsError(false);
 
-            const loggedInUser = response.data.data;
-            localStorage.setItem('userFirstName', loggedInUser.firstname);
+            // The backend now returns data inside response.data.data
+            const payload = response.data.data;
 
-            setTimeout(() => navigate('/dashboard'), 1500);
-            
-            // Log the user data to the console to prove it worked!
-            console.log("Logged in user:", response.data.data);
-            
-            // In the future, we will save the JWT token here and navigate to the Dashboard
-            // setTimeout(() => navigate('/dashboard'), 1500);
+            // --- NEW: SAVE THE TOKEN AND DATA TO LOCAL STORAGE ---
+            localStorage.setItem('accessToken', payload.accessToken);
+            localStorage.setItem('userRole', payload.user.role);
+            localStorage.setItem('userFirstName', payload.user.firstname);
+
+            // Log it to verify
+            console.log("Logged in payload:", payload);
+
+            // Route the user based on their role after a short success message delay
+            setTimeout(() => {
+                if (payload.user.role === 'ADMIN') {
+                    navigate('/admin/dashboard');
+                } else {
+                    navigate('/dashboard');
+                }
+            }, 1000);
 
         } catch (error) {
             setIsError(true);
             setMessage(error.response?.data?.message || 'Invalid email or password');
         }
     };
+
+    const handleChange = (e) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    
 
     // --- STANDARD INLINE STYLES MATCHING YOUR SDD ---
     const styles = {

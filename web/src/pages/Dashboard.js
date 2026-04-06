@@ -83,6 +83,7 @@ const Dashboard = () => {
                         <div style={{ fontSize: '12px' }}>Meals Remaining</div>
                     </div>
                 </div>
+
             </div>
         </div>
     );
