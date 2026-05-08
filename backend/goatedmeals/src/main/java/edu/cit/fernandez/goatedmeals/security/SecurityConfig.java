@@ -44,8 +44,8 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable) // Disable CSRF for stateless REST APIs
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/v1/auth/**").permitAll() // Allow anyone to access auth endpoints
                         .requestMatchers("/api/v1/admin/meals").hasRole("ADMIN")
+                        .requestMatchers("/api/v1/auth/**", "/api/v1/webhooks/**").permitAll()
                         .anyRequest().authenticated() // Block everything else for now
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
