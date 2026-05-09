@@ -6,23 +6,23 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import AdminDashboard from './pages/AdminDashboard';
-import Billing from './pages/Billing'; // newly added
+import Billing from './pages/Billing'; 
+import Menu from './pages/Menu'; // <-- 1. IMPORT YOUR NEW MENU PAGE HERE
+import Schedule from './pages/Schedule';
 
 // Import Layouts
-import MainLayout from './components/MainLayout'; // newly added
+import MainLayout from './components/MainLayout'; 
 
 // 1. THE BOUNCER FOR THE DASHBOARD
-// If they don't have a name in localStorage, kick them to /login
+// Upgraded to check for your JWT accessToken for better security!
 const ProtectedRoute = ({ children }) => {
-    // Note: As you transition to full JWT auth, you might eventually change 'userFirstName' to 'accessToken' here
-    const isAuthenticated = localStorage.getItem('userFirstName') !== null;
+    const isAuthenticated = localStorage.getItem('accessToken') !== null;
     return isAuthenticated ? children : <Navigate to="/login" replace />;
 };
 
 // 2. THE BOUNCER FOR LOGIN/REGISTER
-// If they DO have a name in localStorage, kick them to /dashboard
 const PublicRoute = ({ children }) => {
-    const isAuthenticated = localStorage.getItem('userFirstName') !== null;
+    const isAuthenticated = localStorage.getItem('accessToken') !== null;
     return !isAuthenticated ? children : <Navigate to="/dashboard" replace />;
 };
 
@@ -64,19 +64,20 @@ function App() {
             </ProtectedRoute>
         } />
 
+        {/* ---> 2. THE MISSING LINK: The Menu route now points to your component <--- */}
+        <Route path="/menu" element={
+            <ProtectedRoute>
+                <MainLayout>
+                    <Menu />
+                </MainLayout>
+            </ProtectedRoute>
+        } />
+
         {/* Placeholders for the other sidebar links */}
         <Route path="/schedule" element={
             <ProtectedRoute>
                 <MainLayout>
-                    <div className="p-8 text-white">Schedule Coming Soon...</div>
-                </MainLayout>
-            </ProtectedRoute>
-        } />
-        
-        <Route path="/menu" element={
-            <ProtectedRoute>
-                <MainLayout>
-                    <div className="p-8 text-white">Menu Catalog Coming Soon...</div>
+                    <Schedule />
                 </MainLayout>
             </ProtectedRoute>
         } />
