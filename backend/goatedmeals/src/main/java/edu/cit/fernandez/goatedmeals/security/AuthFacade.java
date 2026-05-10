@@ -8,6 +8,7 @@ import edu.cit.fernandez.goatedmeals.services.UserService;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Component
@@ -15,16 +16,26 @@ public class AuthFacade {
 
     private final UserService userService;
     private final JwtUtil jwtUtil;
+    private final List<AuthenticationStrategy> authStrategies;
+
 
     // The Facade handles the dependencies
-    public AuthFacade(UserService userService, JwtUtil jwtUtil) {
+    public AuthFacade(UserService userService, List<AuthenticationStrategy> authStrategies, JwtUtil jwtUtil) {
         this.userService = userService;
+        this.authStrategies = authStrategies;
         this.jwtUtil = jwtUtil;
     }
 
     public Map<String, Object> authenticate(LoginRequest request) {
         // 1. Verify credentials via UserService
-        User user = userService.loginUser(request);
+        String loginType = request.getLoginType() != null ? request.getLoginType() : "STANDARD";
+
+        AuthenticationStrategy strategy = authStrategies.stream()
+                .filter(s -> s.supports(loginType))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Unsupported login type"));
+
+        User user = strategy.authenticate(request);
 
         // 2. Use the Builder Pattern to construct the safe user object
         UserResponseDTO safeUser = buildSafeUser(user);
