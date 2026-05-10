@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import apiClient from '../api/axiosConfig';
+import apiClient from '../core/api/axiosConfig';
 import { GoogleLogin } from '@react-oauth/google';
 
 const Login = () => {

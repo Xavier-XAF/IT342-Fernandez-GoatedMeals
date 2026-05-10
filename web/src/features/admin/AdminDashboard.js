@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import MealCatalog from '../components/MealCatalog'; // Ensure the path is correct
+import MealCatalog from '../menu/MealCatalog'; // Ensure the path is correct
 
 const AdminDashboard = () => {
     const navigate = useNavigate();
