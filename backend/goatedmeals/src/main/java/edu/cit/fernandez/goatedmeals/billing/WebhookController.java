@@ -34,6 +34,11 @@ public class WebhookController {
 
                 if (optionalPayment.isPresent()) {
                     Payment payment = optionalPayment.get();
+
+                    if ("SUCCESS".equals(payment.getStatus())) {
+                        return ResponseEntity.ok("Webhook already processed for this transaction");
+                    }
+
                     payment.setStatus("SUCCESS");
                     paymentRepository.save(payment);
 

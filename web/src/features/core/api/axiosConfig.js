@@ -8,4 +8,18 @@ const apiClient = axios.create({
     },
 });
 
+apiClient.interceptors.request.use(
+    (config) => {
+        // Automatically grab the token before any request is sent
+        const token = localStorage.getItem('accessToken');
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+    },
+    (error) => {
+        return Promise.reject(error);
+    }
+);
+
 export default apiClient;

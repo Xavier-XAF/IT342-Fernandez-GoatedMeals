@@ -35,27 +35,33 @@ export default function Billing() {
     setError('');
     
     try {
-      // Grab the user's JWT token (adjust 'accessToken' if you saved it under a different name)
       const token = localStorage.getItem('accessToken'); 
       
-      // Make the call to your Spring Boot backend
+      // REVERT: We are going back to static laptop URLs so PayMongo behaves!
+      const payload = {
+        planTier: planTier,
+        amount: amount,
+        successUrl: 'http://localhost:3000/billing?status=success',
+        cancelUrl: 'http://localhost:3000/billing?status=cancelled'
+      };
+
+      // Ensure we hit the standard localhost Spring Boot server
       const response = await axios.post(
-        'http://localhost:8080/api/v1/subscriptions/pay', 
-        { planTier, amount },
+        'http://localhost:8080/api/v1/subscriptions/pay',
+        payload,
         { 
           headers: token ? { Authorization: `Bearer ${token}` } : {} 
         }
       );
 
-      // If Spring Boot successfully created the PayMongo link, redirect the user!
       if (response.data && response.data.data && response.data.data.checkoutUrl) {
         window.location.href = response.data.data.checkoutUrl;
       } else {
-        setError('Checkout URL not received from server. Please check backend logs.');
+        setError('Checkout URL not received from server.');
       }
     } catch (err) {
       console.error('Payment initiation error:', err);
-      setError('Failed to initiate payment. Make sure your Spring Boot server is running!');
+      setError('Failed to initiate payment.');
     } finally {
       setLoading(false);
     }

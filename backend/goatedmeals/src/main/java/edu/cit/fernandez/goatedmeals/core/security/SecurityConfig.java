@@ -45,7 +45,7 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable) // Disable CSRF for stateless REST APIs
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/admin/meals").hasRole("ADMIN")
-                        .requestMatchers("/api/v1/auth/**", "/api/v1/webhooks/**").permitAll()
+                        .requestMatchers("/api/v1/auth/login", "/api/v1/auth/register", "/api/v1/webhooks/**").permitAll()
                         .anyRequest().authenticated() // Block everything else for now
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

@@ -65,6 +65,7 @@ public class SubscriptionController {
         // Using BigDecimal to avoid floating-point inaccuracies with currency
         BigDecimal amount = new BigDecimal(payload.get("amount").toString());
 
+        // Pass them to the service
         String checkoutUrl = payMongoService.createCheckoutSession(user, planTier, amount);
 
         Map<String, Object> data = new HashMap<>();
