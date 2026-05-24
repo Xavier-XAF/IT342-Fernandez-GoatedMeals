@@ -5,4 +5,6 @@ import java.util.Optional;
 
 public interface SubscriptionRepository extends JpaRepository<Subscription, Long> {
     Optional<Subscription> findByUserIdAndStatus(Long userId, String status);
+
+    long countByStatus(String status);
 }
