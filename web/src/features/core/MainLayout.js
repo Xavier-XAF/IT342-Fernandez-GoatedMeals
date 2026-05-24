@@ -15,7 +15,7 @@ export default function MainLayout({ children }) {
     { name: 'Menu', path: '/menu', icon: '🍽️' },
     { name: 'Billing', path: '/billing', icon: '💳' },
     { name: 'Profile', path: '/profile', icon: '👤' },
-    { name: 'Settings', path: '/settings', icon: '⚙️' },
+    
   ];
 
   const handleLogout = () => {

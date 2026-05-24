@@ -31,6 +31,8 @@ public class User {
     @Column(name = "oauth_provider_id", length = 255)
     private String oauthProviderId;
 
+    @Column(name = "default_address", length = 500)
+    private String defaultAddress;
 
     //GETTERS AND SETTERS
 
@@ -97,5 +99,9 @@ public class User {
     public void setOauthProviderId(String oauthProviderId) {
         this.oauthProviderId = oauthProviderId;
     }
+
+    public String getDefaultAddress() { return defaultAddress; }
+
+    public void setDefaultAddress(String defaultAddress) { this.defaultAddress = defaultAddress; }
 
 }

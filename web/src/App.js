@@ -9,6 +9,9 @@ import AdminDashboard from './features/admin/AdminDashboard';
 import Billing from './features/billing/Billing';
 import Menu from './features/menu/Menu';
 import Schedule from './features/schedule/Schedule';
+import Profile from './features/profile/Profile';
+
+
 
 // Import Global Layout from Core
 import MainLayout from './features/core/MainLayout';
@@ -23,6 +26,24 @@ const ProtectedRoute = ({ children }) => {
 const PublicRoute = ({ children }) => {
     const isAuthenticated = localStorage.getItem('accessToken') !== null;
     return !isAuthenticated ? children : <Navigate to="/dashboard" replace />;
+};
+
+// 3. THE BOUNCER FOR ADMIN PAGES (Role Restriction Requirement)
+const AdminRoute = ({ children }) => {
+    const token = localStorage.getItem('accessToken');
+    if (!token) return <Navigate to="/login" replace />;
+
+    try {
+        // Decode the JWT to check the role
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        if (payload.role !== 'ADMIN') {
+            return <Navigate to="/dashboard" replace />; // Kick standard users out
+        }
+    } catch (e) {
+        return <Navigate to="/login" replace />;
+    }
+
+    return children;
 };
 
 function App() {
@@ -78,11 +99,11 @@ function App() {
             </ProtectedRoute>
         } />
 
-        {/* Placeholders for the other sidebar links */}
+        
         <Route path="/profile" element={
             <ProtectedRoute>
                 <MainLayout>
-                    <div className="p-8 text-white">Profile Coming Soon...</div>
+                    <Profile />
                 </MainLayout>
             </ProtectedRoute>
         } />
@@ -90,13 +111,13 @@ function App() {
         <Route path="/settings" element={
             <ProtectedRoute>
                 <MainLayout>
-                    <div className="p-8 text-white">Settings Coming Soon...</div>
+                    <Profile />
                 </MainLayout>
             </ProtectedRoute>
         } />
 
         {/* --- ADMIN ROUTES --- */}
-        <Route path="/admin/dashboard" element={<AdminDashboard />} />
+        <Route path="/admin/dashboard" element={<AdminRoute> <AdminDashboard /> </AdminRoute> } />
         
       </Routes>
     </Router>
