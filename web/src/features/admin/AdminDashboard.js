@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import MealCatalog from '../menu/MealCatalog'; // Ensure the path is correct
+import MealCatalog from '../menu/MealCatalog'; 
+import AdminOrders from './AdminOrders';
+import AdminAnalytics from './AdminAnalytics';
 
 const AdminDashboard = () => {
     const navigate = useNavigate();
-    const [activeTab, setActiveTab] = useState('catalog'); // Default tab
+    const [activeTab, setActiveTab] = useState('analytics'); 
     const [adminName, setAdminName] = useState('Admin');
 
     useEffect(() => {
@@ -12,16 +14,14 @@ const AdminDashboard = () => {
         if (storedName) setAdminName(storedName);
     }, []);
 
-    // --- Logout Feature ---
     const handleLogout = () => {
-        localStorage.clear(); // Clears token and user info [cite: 95, 100]
+        localStorage.clear(); 
         navigate('/login');
     };
 
     const styles = {
         container: { display: 'flex', height: '100vh', backgroundColor: '#121212', color: '#FFFFFF', fontFamily: 'Inter, sans-serif' },
         
-        // Sidebar UI [cite: 666-673]
         sidebar: { width: '260px', backgroundColor: '#1E1E1E', borderRight: '1px solid #333', display: 'flex', flexDirection: 'column', padding: '20px' },
         logo: { fontSize: '22px', fontWeight: 'bold', color: '#00FF66', marginBottom: '40px', letterSpacing: '1px' },
         
@@ -40,8 +40,10 @@ const AdminDashboard = () => {
             gap: '12px'
         }),
 
+        // NEW: Grouped the user info and logout button together
+        userSection: { marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '15px' },
+        userInfo: { textAlign: 'center', color: '#A0AEC0', fontSize: '13px' },
         logoutBtn: { 
-            marginTop: 'auto', 
             padding: '12px', 
             color: '#FF4444', 
             border: '1px solid #FF4444', 
@@ -52,9 +54,8 @@ const AdminDashboard = () => {
             backgroundColor: 'transparent'
         },
 
-        // Main Content Area
-        main: { flex: 1, overflowY: 'auto', padding: '40px' },
-        header: { marginBottom: '30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }
+        // Cleaned up the main content area
+        main: { flex: 1, overflowY: 'auto', padding: '40px' }
     };
 
     return (
@@ -64,39 +65,36 @@ const AdminDashboard = () => {
                 <div style={styles.logo}>Goated Meals! Admin </div>
                 
                 <nav style={styles.navGroup}>
-                    <div 
-                        style={styles.navItem(activeTab === 'catalog')} 
-                        onClick={() => setActiveTab('catalog')}
-                    >
+                    <div style={styles.navItem(activeTab === 'analytics')} onClick={() => setActiveTab('analytics')}>
+                        📊 Overview
+                    </div>
+                    <div style={styles.navItem(activeTab === 'catalog')} onClick={() => setActiveTab('catalog')}>
                         🍱 Meal Catalog
                     </div>
-                    <div 
-                        style={styles.navItem(activeTab === 'orders')} 
-                        onClick={() => setActiveTab('orders')}
-                    >
+                    <div style={styles.navItem(activeTab === 'orders')} onClick={() => setActiveTab('orders')}>
                         📝 Orders
                     </div>
                 </nav>
 
-                <button style={styles.logoutBtn} onClick={handleLogout}>
-                    Sign Out
-                </button>
+                {/* --- USER INFO & LOGOUT --- */}
+                <div style={styles.userSection}>
+                    <div style={styles.userInfo}>
+                        Logged in as <strong style={{ color: '#FFF' }}>{adminName}</strong>
+                    </div>
+                    <button style={styles.logoutBtn} onClick={handleLogout}>
+                        Sign Out
+                    </button>
+                </div>
             </aside>
 
             {/* --- CONTENT AREA --- */}
             <main style={styles.main}>
-                <header style={styles.header}>
-                    <div>
-                        <h1 style={{ fontSize: '24px', margin: 0 }}>
-                            {activeTab === 'catalog' ? 'Meal Management' : 'Order Monitoring'}
-                        </h1>
-                        <p style={{ color: '#A0AEC0', fontSize: '13px', marginTop: '4px' }}>
-                            Logged in as {adminName}
-                        </p>
+                {activeTab === 'analytics' && (
+                    <div className="fade-in">
+                        <AdminAnalytics />
                     </div>
-                </header>
+                )}
 
-                {/* --- TAB SWITCHING LOGIC --- */}
                 {activeTab === 'catalog' && (
                     <div className="fade-in">
                         <MealCatalog /> 
@@ -104,9 +102,8 @@ const AdminDashboard = () => {
                 )}
 
                 {activeTab === 'orders' && (
-                    <div style={{ textAlign: 'center', marginTop: '100px', color: '#A0AEC0' }}>
-                        <h3>Incoming Orders</h3>
-                        <p>Orders table integration coming next...</p>
+                    <div className="fade-in">
+                        <AdminOrders />
                     </div>
                 )}
             </main>

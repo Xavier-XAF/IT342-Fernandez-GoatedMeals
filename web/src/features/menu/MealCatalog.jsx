@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import apiClient from '../core/api/axiosConfig'; 
 
 const MealCatalog = () => {
   const [meals, setMeals] = useState([]);
@@ -6,10 +7,14 @@ const MealCatalog = () => {
   
   // MODAL & FORM STATE
   const [showModal, setShowModal] = useState(false);
+  const [editingMealId, setEditingMealId] = useState(null); 
   const [textData, setTextData] = useState({
     name: '',
     category: 'HIGH_PROTEIN',
-    description: ''
+    description: '',
+    calories: '',
+    protein: '',
+    prepTime: ''
   });
   const [selectedFile, setSelectedFile] = useState(null); 
   const [imagePreview, setImagePreview] = useState(null);
@@ -20,13 +25,9 @@ const MealCatalog = () => {
 
   const fetchMeals = async () => {
     try {
-      const token = localStorage.getItem('accessToken'); 
-      const response = await fetch('http://localhost:8080/api/v1/admin/meals', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const result = await response.json();
-      if (result.success) {
-        setMeals(result.data);
+      const response = await apiClient.get('/admin/meals');
+      if (response.data.success) {
+        setMeals(response.data.data);
       }
     } catch (error) {
       console.error("Failed to fetch meals:", error);
@@ -35,28 +36,25 @@ const MealCatalog = () => {
     }
   };
 
-  // --- UPDATED: Use textData instead of formData ---
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setTextData({ ...textData, [name]: value });
   };
 
-  // --- BROUGHT BACK: Handle File Selection for Upload & Preview ---
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       setSelectedFile(file);
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result);
-      };
+      reader.onloadend = () => setImagePreview(reader.result);
       reader.readAsDataURL(file);
     }
   };
 
   const resetForm = () => {
     setShowModal(false);
-    setTextData({ name: '', category: 'HIGH_PROTEIN', description: '' });
+    setEditingMealId(null); 
+    setTextData({ name: '', category: 'HIGH_PROTEIN', description: '', calories: '', protein: '', prepTime: '' });
     setSelectedFile(null);
     setImagePreview(null);
   };
@@ -68,68 +66,46 @@ const MealCatalog = () => {
       formDataToSend.append('name', textData.name);
       formDataToSend.append('category', textData.category);
       formDataToSend.append('description', textData.description);
-      
+      formDataToSend.append('calories', textData.calories);
+      formDataToSend.append('protein', textData.protein);
+      formDataToSend.append('prepTime', textData.prepTime);
+
       if (selectedFile) {
         formDataToSend.append('imageFile', selectedFile);
       }
-
-      const token = localStorage.getItem('accessToken');
       
-      // --- THE SMART LOGIC ---
-      // If editingMealId exists, we use PUT and add the ID to the URL.
-      // Otherwise, we use POST to create a new one.
-      const url = editingMealId 
-        ? `http://localhost:8080/api/v1/admin/meals/${editingMealId}`
-        : 'http://localhost:8080/api/v1/admin/meals';
-
-      const method = editingMealId ? 'PUT' : 'POST';
-
-      const response = await fetch(url, {
-        method: method,
-        headers: { 'Authorization': `Bearer ${token}` },
-        body: formDataToSend, 
-      });
-      
-      const result = await response.json();
-      
-      if (result.success) {
-        if (editingMealId) {
-          // UPDATE UI: Replace the old meal in the list with the updated one
-          setMeals(meals.map(m => m.id === editingMealId ? result.data : m));
-        } else {
-          // ADD UI: Just push the new meal to the end of the list
-          setMeals([...meals, result.data]);
-        }
-        
-        resetForm(); // Closes modal and clears state
-        setEditingMealId(null); // Reset the editing tracker
+      let response;
+      if (editingMealId) {
+        response = await apiClient.put(`/admin/meals/${editingMealId}`, formDataToSend, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
       } else {
-        alert("Action failed: " + result.message);
+        response = await apiClient.post('/admin/meals', formDataToSend, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+      }
+      
+      if (response.data.success) {
+        if (editingMealId) {
+          setMeals(meals.map(m => m.id === editingMealId ? response.data.data : m));
+        } else {
+          setMeals([...meals, response.data.data]);
+        }
+        resetForm(); 
       }
     } catch (error) {
       console.error("Submit failed:", error);
+      alert("Action failed. Check console.");
     }
   };
 
-  // DELETE LOGIC
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this meal?")) return;
 
     try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(`http://localhost:8080/api/v1/admin/meals/${id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-
-      // --- NEW: Check if the response is actually okay (200-299) ---
-      if (!response.ok) {
-        const errorText = await response.text(); // Read as text instead of JSON if it fails
-        throw new Error(`Server returned ${response.status}: ${errorText}`);
-      }
-
-      const result = await response.json();
-      if (result.success) {
+      const response = await apiClient.delete(`/admin/meals/${id}`);
+      
+      if (response.data.success) {
         setMeals(meals.filter(m => m.id !== id));
       }
     } catch (error) {
@@ -138,22 +114,21 @@ const MealCatalog = () => {
     }
   };
 
-  // EDIT LOGIC (Pre-fills the modal)
-  const [editingMealId, setEditingMealId] = useState(null);
-
   const handleEditClick = (meal) => {
     setEditingMealId(meal.id);
     setTextData({
       name: meal.name,
       category: meal.category,
-      description: meal.description
+      description: meal.description,
+      calories: meal.calories || '',
+      protein: meal.protein || '',
+      prepTime: meal.prepTime || ''
     });
     setImagePreview(meal.imageUrl);
     setShowModal(true);
   };
 
   const styles = {
-    // ... layout styles ...
     pageContainer: { minHeight: '100%', padding: '0', backgroundColor: 'transparent', color: '#FFFFFF', fontFamily: 'sans-serif' },
     headerRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' },
     addButton: { backgroundColor: '#00FF66', color: '#121212', border: 'none', padding: '10px 20px', fontSize: '14px', fontWeight: 'bold', borderRadius: '6px', cursor: 'pointer' },
@@ -162,8 +137,6 @@ const MealCatalog = () => {
     card: { backgroundColor: '#1E1E1E', border: '1px solid #333', borderRadius: '8px', padding: '1rem' , minHeight: '380px', overflow: 'hidden'},
     image: { width: '100%', height: '180px', objectFit: 'cover', borderRadius: '6px', marginBottom: '1rem', backgroundColor: '#121212' },
     categoryTag: { backgroundColor: '#333', color: '#A0AEC0', padding: '4px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 'bold', display: 'inline-block', marginBottom: '8px', textTransform: 'uppercase' },
-    
-    // ... modal styles ...
     modalOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0, 0, 0, 0.8)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 },
     modalContent: { backgroundColor: '#1E1E1E', padding: '2rem', borderRadius: '12px', width: '500px', maxHeight: '90vh', overflowY: 'auto', border: '1px solid #333' },
     formGroup: { marginBottom: '1rem', display: 'flex', flexDirection: 'column' },
@@ -172,7 +145,6 @@ const MealCatalog = () => {
     imagePreview: { width: '100px', height: '100px', objectFit: 'cover', borderRadius: '8px', marginTop: '10px', border: '1px solid #333', backgroundColor: '#121212' },
     buttonRow: { display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '1.5rem' },
     cancelBtn: { backgroundColor: 'transparent', color: '#A0AEC0', border: '1px solid #333', padding: '10px 20px', borderRadius: '6px', cursor: 'pointer' },
-
     actionRow: { display: 'flex', gap: '10px', marginTop: '15px', borderTop: '1px solid #333', paddingTop: '10px' },
     editBtn: { backgroundColor: 'transparent', color: '#00FF66', border: '1px solid #00FF66', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' },
     deleteBtn: { backgroundColor: 'transparent', color: '#FF4444', border: '1px solid #FF4444', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }
@@ -213,6 +185,14 @@ const MealCatalog = () => {
 
                 <h3 style={{ margin: '0 0 4px 0', color: '#00FF66', fontSize: '18px' }}>{meal.name}</h3>
                 <span style={styles.categoryTag}>{meal.category}</span>
+                
+                {/* --- INSERTION 1: THE NUTRITION STATS ON THE CARD --- */}
+                <div style={{ display: 'flex', gap: '12px', marginTop: '10px', fontSize: '12px', color: '#A0AEC0' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>🔥 {meal.calories || 0} kcal</span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>🥩 {meal.protein || 0}g Pro</span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>⏱️ {meal.prepTime || 'N/A'}</span>
+                </div>
+
                 <p style={{ margin: '8px 0 0 0', color: '#A0AEC0', fontSize: '13px', lineHeight: '1.4' }}>
                   {meal.description}
                 </p>
@@ -225,12 +205,14 @@ const MealCatalog = () => {
       {showModal && (
         <div style={styles.modalOverlay}>
           <div style={styles.modalContent}>
-            <h2 style={{ marginTop: 0, marginBottom: '1.5rem', color: '#FFF' }}>Add New Meal</h2>
+            <h2 style={{ marginTop: 0, marginBottom: '1.5rem', color: '#FFF' }}>
+                {editingMealId ? 'Edit Meal' : 'Add New Meal'}
+            </h2>
             
             <form onSubmit={handleSubmit}>
               <div style={styles.formGroup}>
                 <label style={styles.label}>Meal Name</label>
-                <input type="text" name="name" value={textData.name} onChange={handleInputChange} style={styles.input} required placeholder="e.g. Grilled Salmon with Asparagus" />
+                <input type="text" name="name" value={textData.name} onChange={handleInputChange} style={styles.input} required placeholder="e.g. Grilled Salmon" />
               </div>
               
               <div style={styles.formGroup}>
@@ -244,7 +226,22 @@ const MealCatalog = () => {
                 </select>
               </div>
 
-              {/* --- BROUGHT BACK: Visual File Upload Input --- */}
+              {/* --- INSERTION 2: THE FORM INPUTS FOR CALORIES, PROTEIN, AND PREP TIME --- */}
+              <div style={{ display: 'flex', gap: '10px', marginBottom: '1rem' }}>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                    <label style={styles.label}>Calories (kcal)</label>
+                    <input type="number" name="calories" value={textData.calories} onChange={handleInputChange} style={styles.input} placeholder="e.g. 450" />
+                </div>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                    <label style={styles.label}>Protein (g)</label>
+                    <input type="number" name="protein" value={textData.protein} onChange={handleInputChange} style={styles.input} placeholder="e.g. 35" />
+                </div>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                    <label style={styles.label}>Prep Time</label>
+                    <input type="text" name="prepTime" value={textData.prepTime} onChange={handleInputChange} style={styles.input} placeholder="e.g. 15 mins" />
+                </div>
+              </div>
+
               <div style={styles.formGroup}>
                 <label style={styles.label}>Meal Image</label>
                 
@@ -264,13 +261,13 @@ const MealCatalog = () => {
                     accept="image/png, image/jpeg, image/gif" 
                     onChange={handleFileChange} 
                     style={{ ...styles.input, marginTop: '10px' }} 
-                    required 
+                    required={!editingMealId} 
                 />
               </div>
 
               <div style={styles.formGroup}>
                 <label style={styles.label}>Description</label>
-                <textarea name="description" value={textData.description} onChange={handleInputChange} style={{ ...styles.input, height: '80px', resize: 'vertical' }} required placeholder="Describe the ingredients and benefits..." />
+                <textarea name="description" value={textData.description} onChange={handleInputChange} style={{ ...styles.input, height: '80px', resize: 'vertical' }} required placeholder="Describe the ingredients..." />
               </div>
 
               <div style={styles.buttonRow}>

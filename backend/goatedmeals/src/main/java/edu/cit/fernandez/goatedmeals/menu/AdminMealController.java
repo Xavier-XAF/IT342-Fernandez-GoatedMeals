@@ -28,6 +28,9 @@ public class AdminMealController {
             @RequestParam("name") String name,
             @RequestParam("category") String category,
             @RequestParam("description") String description,
+            @RequestParam(value = "calories", required = false) Integer calories,
+            @RequestParam(value = "protein", required = false) Integer protein,
+            @RequestParam(value = "prepTime", required = false) String prepTime,
             @RequestParam("imageFile") MultipartFile imageFile) {
 
         try {
@@ -35,6 +38,9 @@ public class AdminMealController {
             mealToSave.setName(name);
             mealToSave.setCategory(category);
             mealToSave.setDescription(description);
+            mealToSave.setCalories(calories != null ? calories : 0);
+            mealToSave.setProtein(protein != null ? protein : 0);
+            mealToSave.setPrepTime(prepTime != null ? prepTime : "N/A");
 
             // 1. Upload the real image to Supabase
             String publicImageUrl = storageService.uploadImage(imageFile);
@@ -85,6 +91,9 @@ public class AdminMealController {
             @RequestParam("name") String name,
             @RequestParam("category") String category,
             @RequestParam("description") String description,
+            @RequestParam(value = "calories", required = false) Integer calories,
+            @RequestParam(value = "protein", required = false) Integer protein,
+            @RequestParam(value = "prepTime", required = false) String prepTime,
             @RequestParam(value = "imageFile", required = false) MultipartFile imageFile) {
 
         try {
@@ -93,6 +102,9 @@ public class AdminMealController {
             meal.setName(name);
             meal.setCategory(category);
             meal.setDescription(description);
+            meal.setCalories(calories != null ? calories : meal.getCalories());
+            meal.setProtein(protein != null ? protein : meal.getProtein());
+            meal.setPrepTime(prepTime != null ? prepTime : meal.getPrepTime());
 
             // Only upload a new image if the user actually picked one
             if (imageFile != null && !imageFile.isEmpty()) {

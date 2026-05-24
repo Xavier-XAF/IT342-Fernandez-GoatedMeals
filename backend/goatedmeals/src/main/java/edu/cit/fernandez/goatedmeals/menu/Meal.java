@@ -22,15 +22,28 @@ public class Meal {
     @Column(length = 50)
     private String category;
 
+    // --- NEW NUTRITION FIELDS ---
+    @Column(name = "calories")
+    private Integer calories;
+
+    @Column(name = "protein")
+    private Integer protein;
+
+    @Column(name = "prep_time")
+    private String prepTime;
+
 
     public Meal() {
     }
 
-    public Meal(String name, String description, String imageUrl, String category) {
+    public Meal(String name, String description, String imageUrl, String category, Integer calories, Integer protein, String prepTime) {
         this.name = name;
         this.description = description;
         this.imageUrl = imageUrl;
         this.category = category;
+        this.calories = calories;
+        this.protein = protein;
+        this.prepTime = prepTime;
     }
 
     // Getters and Setters
@@ -48,6 +61,16 @@ public class Meal {
 
     public String getCategory() { return category; }
     public void setCategory(String category) { this.category = category; }
+
+    public Integer getCalories() { return calories; }
+    public void setCalories(Integer calories) { this.calories = calories; }
+
+    public Integer getProtein() { return protein; }
+    public void setProtein(Integer protein) { this.protein = protein; }
+
+    public String getPrepTime() { return prepTime; }
+    public void setPrepTime(String prepTime) { this.prepTime = prepTime; }
+
 }
 
 
