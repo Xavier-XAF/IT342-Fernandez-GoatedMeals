@@ -1,20 +1,22 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 
-// Import Pages
-import Login from './pages/Login';
-import Register from './pages/Register';
-import Dashboard from './pages/Dashboard';
-import AdminDashboard from './pages/AdminDashboard';
-import Billing from './pages/Billing'; 
-import Menu from './pages/Menu'; // <-- 1. IMPORT YOUR NEW MENU PAGE HERE
-import Schedule from './pages/Schedule';
+// --- NEW VERTICAL SLICE IMPORTS ---
+import Login from './features/auth/Login';
+import Register from './features/auth/Register';
+import Dashboard from './features/dashboard/Dashboard';
+import AdminDashboard from './features/admin/AdminDashboard';
+import Billing from './features/billing/Billing';
+import Menu from './features/menu/Menu';
+import Schedule from './features/schedule/Schedule';
+import Profile from './features/profile/Profile';
 
-// Import Layouts
-import MainLayout from './components/MainLayout'; 
+
+
+// Import Global Layout from Core
+import MainLayout from './features/core/MainLayout';
 
 // 1. THE BOUNCER FOR THE DASHBOARD
-// Upgraded to check for your JWT accessToken for better security!
 const ProtectedRoute = ({ children }) => {
     const isAuthenticated = localStorage.getItem('accessToken') !== null;
     return isAuthenticated ? children : <Navigate to="/login" replace />;
@@ -26,28 +28,45 @@ const PublicRoute = ({ children }) => {
     return !isAuthenticated ? children : <Navigate to="/dashboard" replace />;
 };
 
+// 3. THE BOUNCER FOR ADMIN PAGES (Role Restriction Requirement)
+const AdminRoute = ({ children }) => {
+    const token = localStorage.getItem('accessToken');
+    if (!token) return <Navigate to="/login" replace />;
+
+    try {
+        // Decode the JWT to check the role
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        if (payload.role !== 'ADMIN') {
+            return <Navigate to="/dashboard" replace />; // Kick standard users out
+        }
+    } catch (e) {
+        return <Navigate to="/login" replace />;
+    }
+
+    return children;
+};
+
 function App() {
   return (
     <Router>
       <Routes>
         {/* Redirect base URL to login */}
         <Route path="/" element={<Navigate to="/login" replace />} />
-        
+
         {/* --- PUBLIC ROUTES (Only for guests) --- */}
         <Route path="/login" element={
             <PublicRoute>
                 <Login />
             </PublicRoute>
         } />
-        
+
         <Route path="/register" element={
             <PublicRoute>
                 <Register />
             </PublicRoute>
         } />
-        
+
         {/* --- PROTECTED ROUTES (Only for logged-in users) --- */}
-        {/* We wrap the page components with MainLayout so they get the persistent sidebar */}
         <Route path="/dashboard" element={
             <ProtectedRoute>
                 <MainLayout>
@@ -64,7 +83,6 @@ function App() {
             </ProtectedRoute>
         } />
 
-        {/* ---> 2. THE MISSING LINK: The Menu route now points to your component <--- */}
         <Route path="/menu" element={
             <ProtectedRoute>
                 <MainLayout>
@@ -73,7 +91,6 @@ function App() {
             </ProtectedRoute>
         } />
 
-        {/* Placeholders for the other sidebar links */}
         <Route path="/schedule" element={
             <ProtectedRoute>
                 <MainLayout>
@@ -82,10 +99,11 @@ function App() {
             </ProtectedRoute>
         } />
 
+        
         <Route path="/profile" element={
             <ProtectedRoute>
                 <MainLayout>
-                    <div className="p-8 text-white">Profile Coming Soon...</div>
+                    <Profile />
                 </MainLayout>
             </ProtectedRoute>
         } />
@@ -93,14 +111,13 @@ function App() {
         <Route path="/settings" element={
             <ProtectedRoute>
                 <MainLayout>
-                    <div className="p-8 text-white">Settings Coming Soon...</div>
+                    <Profile />
                 </MainLayout>
             </ProtectedRoute>
         } />
 
         {/* --- ADMIN ROUTES --- */}
-        {/* Note: Left without MainLayout as the SDD shows Admin uses a different layout/sidebar */}
-        <Route path="/admin/dashboard" element={<AdminDashboard />} />
+        <Route path="/admin/dashboard" element={<AdminRoute> <AdminDashboard /> </AdminRoute> } />
         
       </Routes>
     </Router>
