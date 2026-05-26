@@ -26,6 +26,9 @@ public class MealSchedule {
     @Column(name = "delivery_day")
     private String deliveryDay;
 
+    @Column(name = "delivery_time")
+    private String deliveryTime;
+
     // e.g., "SCHEDULED", "PREPARING", "DELIVERED"
     @Column(nullable = false)
     private String status = "SCHEDULED";
@@ -51,4 +54,7 @@ public class MealSchedule {
     public void setDeliveryMethod(String deliveryMethod) { this.deliveryMethod = deliveryMethod; }
     public String getDeliveryAddress() { return deliveryAddress; }
     public void setDeliveryAddress(String deliveryAddress) { this.deliveryAddress = deliveryAddress; }
+    public String getDeliveryTime() { return deliveryTime; }
+    public void setDeliveryTime(String deliveryTime) { this.deliveryTime = deliveryTime; }
+
 }

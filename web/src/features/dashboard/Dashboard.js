@@ -1,65 +1,86 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import apiClient from '../core/api/axiosConfig'; // Using your secure interceptor
 import { useNavigate } from 'react-router-dom';
 
 export default function Dashboard() {
   const [subscription, setSubscription] = useState(null);
-  const [meals, setMeals] = useState([]); // New state to hold real database meals
+  const [scheduledMeals, setScheduledMeals] = useState([]); // Store actual booked deliveries
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        const token = localStorage.getItem('accessToken');
-        if (!token) {
-          navigate('/login'); 
-          return;
-        }
+  const fetchDashboardData = async () => {
+    try {
+      // Fetch BOTH subscription status and the user's personal schedule
+      const [subResponse, scheduleResponse] = await Promise.all([
+        apiClient.get('/subscriptions/me'),
+        apiClient.get('/schedules/my-schedule')
+      ]);
 
-        const headers = { Authorization: `Bearer ${token}` };
+      const subData = subResponse.data;
 
-        // Fetch BOTH subscription status and the real meal menu at the same time
-        const [subResponse, mealsResponse] = await Promise.all([
-          axios.get('http://localhost:8080/api/v1/subscriptions/me', { headers }),
-          axios.get('http://localhost:8080/api/v1/meals', { headers })
-        ]);
-
-        const subData = subResponse.data;
-
-        // 1. Process Subscription Data
-        if (subData.hasSubscription) {
-          const readablePlan = subData.planTier ? subData.planTier.replace('_', ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase()) : 'Premium Plan';
-          
-          setSubscription({
-            hasSubscription: true,
-            activePlan: `${readablePlan} Plan`,
-            availableCredits: subData.availableCredits,
-            nextRenewal: "Next Billing Cycle", 
-            planType: readablePlan,
-            mealsPerWeek: subData.totalCreditsAllowed || 7, 
-            deliveryDay: "Monday"
-          });
-        } else {
-          setSubscription({ hasSubscription: false });
-        }
+      // 1. Process Subscription Data
+      if (subData.hasSubscription) {
+        const readablePlan = subData.planTier ? subData.planTier.replace('_', ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase()) : 'Premium Plan';
         
-        // 2. Process Real Meal Data
-        // If the database returns meals, save them. Only take the first 3 for the dashboard preview.
-        if (mealsResponse.data && mealsResponse.data.length > 0) {
-          setMeals(mealsResponse.data.slice(0, 3));
-        }
-
-        setLoading(false);
-
-      } catch (err) {
-        console.error('Error fetching dashboard data:', err);
-        setLoading(false);
+        setSubscription({
+          hasSubscription: true,
+          activePlan: `${readablePlan} Plan`,
+          availableCredits: subData.availableCredits,
+          nextRenewal: "Next Billing Cycle", 
+          planType: readablePlan,
+          mealsPerWeek: subData.totalCreditsAllowed || 7, 
+          deliveryDay: "Monday"
+        });
+      } else {
+        setSubscription({ hasSubscription: false });
       }
-    };
+      
+      // 2. Process Personal Schedule Data
+      if (scheduleResponse.data && Array.isArray(scheduleResponse.data)) {
+        // Sort the array: push 'DELIVERED' to the bottom
+        const sortedOrders = scheduleResponse.data.sort((a, b) => {
+            if (a.status === 'DELIVERED' && b.status !== 'DELIVERED') return 1;
+            if (a.status !== 'DELIVERED' && b.status === 'DELIVERED') return -1;
+            return b.id - a.id; // Secondary sort: newest orders first
+        });
+        setScheduledMeals(sortedOrders);
+      }
 
+    } catch (err) {
+      console.error('Error fetching dashboard data:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchDashboardData();
   }, [navigate]);
+
+  // NEW: Cancel a meal delivery and refund a credit
+  const handleCancelMeal = async (scheduleId) => {
+    if (!window.confirm("Are you sure you want to cancel this delivery? Your credit will be refunded.")) return;
+    
+    try {
+      const response = await apiClient.delete(`/schedules/${scheduleId}`);
+      alert(response.data.message);
+      fetchDashboardData(); // Refresh the dashboard to instantly update the credits and remove the meal
+    } catch (error) {
+      console.error("Failed to cancel meal:", error);
+      alert("Failed to cancel meal. It might already be preparing!");
+    }
+  };
+
+  // Helper for status colors
+  const getStatusBadge = (status) => {
+    switch (status) {
+        case 'SCHEDULED': return <span className="bg-[#00FF66]/20 text-[#00FF66] text-xs font-bold px-2 py-1 rounded">SCHEDULED</span>;
+        case 'PREPARING': return <span className="bg-yellow-500/20 text-yellow-500 text-xs font-bold px-2 py-1 rounded">PREPARING</span>;
+        case 'DELIVERING': return <span className="bg-purple-500/20 text-purple-500 text-xs font-bold px-2 py-1 rounded">DELIVERING</span>;
+        case 'DELIVERED': return <span className="bg-blue-500/20 text-blue-500 text-xs font-bold px-2 py-1 rounded">DELIVERED</span>;
+        default: return <span className="bg-gray-500/20 text-gray-400 text-xs font-bold px-2 py-1 rounded">{status}</span>;
+    }
+  };
 
   if (loading) return <div className="text-white bg-[#121212] min-h-screen p-8">Loading your dashboard...</div>;
 
@@ -73,14 +94,6 @@ export default function Dashboard() {
           <p className="text-gray-400 text-sm">Welcome back! Manage your meal plan.</p>
         </div>
         <div className="flex items-center gap-4">
-          <div className="relative">
-            <span className="absolute left-3 top-2.5 text-gray-400 text-sm">🔍</span>
-            <input 
-              type="text" 
-              placeholder="Search meals..." 
-              className="bg-[#1E1E1E] border border-gray-800 rounded-full py-2 pl-9 pr-4 text-sm focus:outline-none focus:border-[#00FF66] text-white w-64"
-            />
-          </div>
           <button className="bg-[#1E1E1E] p-2 rounded-full border border-gray-800 hover:text-[#00FF66] transition">
             🔔
           </button>
@@ -111,21 +124,6 @@ export default function Dashboard() {
               <p className="text-xs font-medium opacity-80">Meals Remaining</p>
             </div>
           </div>
-
-          <div className="grid grid-cols-3 gap-4 text-sm relative z-10">
-            <div>
-              <p className="text-gray-500 mb-1">Plan Type</p>
-              <p className="font-semibold text-white">{subscription.planType}</p>
-            </div>
-            <div>
-              <p className="text-gray-500 mb-1">Meals per Week</p>
-              <p className="font-semibold text-white">{subscription.mealsPerWeek} Meals</p>
-            </div>
-            <div>
-              <p className="text-gray-500 mb-1">Delivery Day</p>
-              <p className="font-semibold text-white">{subscription.deliveryDay}</p>
-            </div>
-          </div>
         </div>
       ) : (
         <div className="bg-[#1E1E1E] rounded-2xl p-8 border border-gray-800 mb-10 text-center">
@@ -141,56 +139,76 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* REAL Database Weekly Menu Section */}
-      <div>
-        <div className="flex justify-between items-end mb-4">
-          <div>
-            <h2 className="text-lg font-bold text-white">Upcoming Weekly Menu</h2>
-            <p className="text-sm text-gray-400">Select your meals for the upcoming week</p>
+      {/* REAL User Schedule Section */}
+      {subscription?.hasSubscription && (
+        <div>
+          <div className="flex justify-between items-end mb-4">
+            <div>
+              <h2 className="text-lg font-bold text-white">Your Scheduled Deliveries</h2>
+              <p className="text-sm text-gray-400">Track and manage your upcoming meals</p>
+            </div>
+            <button 
+              onClick={() => navigate('/menu')}
+              className="bg-transparent border border-[#00FF66] text-[#00FF66] px-4 py-2 rounded-lg text-sm hover:bg-[#00FF66] hover:text-black transition font-medium"
+            >
+              + Book New Meal
+            </button>
           </div>
-          <button 
-            onClick={() => navigate('/menu')}
-            className="text-[#00FF66] text-sm hover:underline font-medium"
-          >
-            View All Menus →
-          </button>
-        </div>
 
-        {meals.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {meals.map(meal => (
-              <div key={meal.id} className="bg-[#1E1E1E] rounded-xl border border-gray-800 overflow-hidden hover:border-gray-600 transition cursor-pointer flex flex-col">
-                <div className="relative h-48 bg-gray-900">
-                  {/* Fallback image logic just in case an admin forgets to add a photo */}
-                  <img 
-                    src={meal.imageUrl || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&q=80&w=400"} 
-                    alt={meal.name} 
-                    className="w-full h-full object-cover" 
-                    onError={(e) => { e.target.src = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&q=80&w=400" }}
-                  />
+          {scheduledMeals.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {scheduledMeals.map(schedule => (
+                <div key={schedule.id} className="bg-[#1E1E1E] rounded-xl border border-gray-800 overflow-hidden flex flex-col">
+                  <div className="relative h-40 bg-gray-900">
+                    <img 
+                      src={schedule.meal?.imageUrl || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&q=80&w=400"} 
+                      alt={schedule.meal?.name} 
+                      className="w-full h-full object-cover opacity-80" 
+                    />
+                    <div className="absolute top-3 left-3">
+                        {getStatusBadge(schedule.status)}
+                    </div>
+                  </div>
                   
-                  {/* Category Tag (If your meal model has category, otherwise defaults to "Premium") */}
-                  <span className="absolute top-3 left-3 bg-[#00FF66] text-black text-xs font-bold px-2 py-1 rounded">
-                    {meal.category || 'Premium'}
-                  </span>
-                  
-                  <span className="absolute top-3 right-3 bg-black/70 text-[#00FF66] text-xs font-bold px-2 py-1 rounded flex items-center gap-1">
-                    ⭐ {meal.rating || '4.9'}
-                  </span>
+                  <div className="p-5 flex-1 flex flex-col">
+                    <h3 className="font-bold text-white mb-1 text-lg">{schedule.meal?.name}</h3>
+                    
+                    <div className="mt-4 space-y-2 text-sm text-gray-400 flex-1">
+                        <p className="flex justify-between"><span>Delivery Day:</span> <span className="text-white">{schedule.deliveryDay}</span></p>
+                        <p className="flex justify-between"><span>Delivery Time:</span> <span className="text-white">{schedule.deliveryTime || 'N/A'}</span></p>
+                        <p className="flex justify-between"><span>Method:</span> <span className="text-white">{schedule.deliveryMethod}</span></p>
+                        <p className="flex justify-between"><span>Address:</span> <span className="text-white truncate max-w-[120px]">{schedule.deliveryAddress}</span></p>
+                    </div>
+
+                    {/* Only allow cancellation if it hasn't been prepped/delivered yet */}
+                    {/* Only allow cancellation if it is STRICTLY in the SCHEDULED state */}
+                    {schedule.status === 'SCHEDULED' && (
+                        <button 
+                            onClick={() => handleCancelMeal(schedule.id)}
+                            className="mt-5 w-full bg-transparent border border-red-500/50 text-red-400 py-2 rounded text-sm hover:bg-red-500/10 transition"
+                        >
+                            Cancel & Refund Credit
+                        </button>
+                    )}
+                  </div>
                 </div>
-                <div className="p-5 flex-1 flex flex-col">
-                  <h3 className="font-bold text-white mb-2 text-lg">{meal.name}</h3>
-                  <p className="text-gray-400 text-sm line-clamp-2 flex-1">{meal.description}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="bg-[#1E1E1E] rounded-xl border border-gray-800 p-8 text-center text-gray-400">
-            <p>The chefs are currently preparing the new menu. Check back soon!</p>
-          </div>
-        )}
-      </div>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-[#1E1E1E] rounded-xl border border-gray-800 p-8 text-center flex flex-col items-center justify-center">
+              <div className="text-4xl mb-3">📦</div>
+              <h3 className="text-white font-bold text-lg mb-2">No Deliveries Scheduled</h3>
+              <p className="text-gray-400 text-sm max-w-sm mb-4">You have {subscription.availableCredits} credits available! Head over to the menu to book your meals for the week.</p>
+              <button 
+                onClick={() => navigate('/menu')}
+                className="text-[#00FF66] font-bold hover:underline"
+              >
+                Go to Menu →
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

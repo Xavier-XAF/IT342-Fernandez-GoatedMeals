@@ -28,39 +28,39 @@ public class ScheduleController {
     private MealScheduleRepository mealScheduleRepository;
 
     @DeleteMapping("/{scheduleId}")
-    public ResponseEntity<?> cancelSchedule(Authentication authentication, @PathVariable Long scheduleId) {
+    public ResponseEntity<?> cancelSchedule(@PathVariable Long scheduleId, Authentication authentication) {
         try {
-            // 1. Identify User
             User user = userRepository.findByEmail(authentication.getName())
                     .orElseThrow(() -> new RuntimeException("User not found"));
 
-            // 2. Find the Schedule
             MealSchedule schedule = mealScheduleRepository.findById(scheduleId)
                     .orElseThrow(() -> new RuntimeException("Schedule not found"));
 
-            // 3. Security Check: Prevent users from canceling other people's meals
+            // 1. Security Check: Does this order actually belong to this user?
             if (!schedule.getUser().getId().equals(user.getId())) {
-                return ResponseEntity.status(403).body(Map.of("error", "Unauthorized action."));
+                return ResponseEntity.status(403).body(Map.of("error", "Unauthorized to cancel this order"));
             }
 
-            // 4. Delete the schedule from the database
-            mealScheduleRepository.delete(schedule);
+            // --- 2. NEW STRICT CHECK: Only allow cancellation if SCHEDULED ---
+            if (!schedule.getStatus().equals("SCHEDULED")) {
+                return ResponseEntity.badRequest().body(Map.of(
+                        "error", "Too late! You can only cancel orders that are still SCHEDULED."
+                ));
+            }
 
-            // 5. Refund 1 credit to their active subscription
-            Subscription sub = subscriptionRepository.findByUserIdAndStatus(user.getId(), "ACTIVE")
-                    .orElseThrow(() -> new RuntimeException("Active subscription not found"));
+            // 3. Refund the credit
+            Subscription sub = subscriptionRepository.findByUserId(user.getId())
+                    .orElseThrow(() -> new RuntimeException("Subscription not found"));
 
             sub.setAvailableCredits(sub.getAvailableCredits() + 1);
             subscriptionRepository.save(sub);
 
-            return ResponseEntity.ok(Map.of(
-                    "message", "Meal successfully cancelled! 1 credit refunded.",
-                    "remainingCredits", sub.getAvailableCredits()
-            ));
+            // 4. Delete the schedule
+            mealScheduleRepository.delete(schedule);
 
+            return ResponseEntity.ok(Map.of("message", "Delivery canceled. 1 Credit has been refunded."));
         } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.badRequest().body(Map.of("error", "Failed to cancel schedule"));
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
 
@@ -71,9 +71,8 @@ public class ScheduleController {
             User user = userRepository.findByEmail(authentication.getName())
                     .orElseThrow(() -> new RuntimeException("User not found"));
 
-            // 2. Fetch all their active schedules (ignoring old delivered ones for now)
-            // We created this method in MealScheduleRepository earlier!
-            List<MealSchedule> mySchedules = mealScheduleRepository.findByUserIdAndStatus(user.getId(), "SCHEDULED");
+            // FIX: Fetch ALL of their schedules (Scheduled, Preparing, Delivered)
+            List<MealSchedule> mySchedules = mealScheduleRepository.findByUserId(user.getId());
 
             return ResponseEntity.ok(mySchedules);
 
@@ -109,6 +108,7 @@ public class ScheduleController {
             schedule.setUser(user);
             schedule.setMeal(meal);
             schedule.setDeliveryDay((String) payload.get("deliveryDate"));
+            schedule.setDeliveryTime((String) payload.get("deliveryTime"));
             schedule.setDeliveryMethod((String) payload.get("deliveryMethod"));
             schedule.setDeliveryAddress((String) payload.get("deliveryAddress"));
 

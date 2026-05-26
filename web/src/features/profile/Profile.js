@@ -1,140 +1,200 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import apiClient from '../core/api/axiosConfig';
 
-const Profile = ({ user }) => {
-    const [activeTab, setActiveTab] = useState('details');
-    const [loading, setLoading] = useState(false);
+export default function Profile() {
+    const navigate = useNavigate();
+    const [profile, setProfile] = useState({ firstname: '', lastname: '', email: '' });
+    const [isEditing, setIsEditing] = useState(false);
+    const [formData, setFormData] = useState({ firstname: '', lastname: '', email: '' });
+    const [loading, setLoading] = useState(true);
     
-    // Controlled form state
-    const [profileData, setProfileData] = useState({
-        phone: '',
-        defaultAddress: ''
-    });
+    // Status Messages
+    const [message, setMessage] = useState({ text: '', type: '' });
+    
+    // Password State
+    const [passwordData, setPasswordData] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    const [isChangingPassword, setIsChangingPassword] = useState(false);
 
-    const handleSave = (e) => {
-        e.preventDefault();
-        setLoading(true);
-        setTimeout(() => {
-            alert('Account changes successfully updated!');
+    useEffect(() => {
+        fetchProfile();
+    }, []);
+
+    const fetchProfile = async () => {
+        try {
+            const response = await apiClient.get('/auth/me'); 
+            setProfile(response.data);
+            setFormData({
+                firstname: response.data.firstname,
+                lastname: response.data.lastname,
+                email: response.data.email
+            });
+        } catch (error) {
+            console.error("Failed to load profile:", error);
+        } finally {
             setLoading(false);
-        }, 800);
+        }
     };
 
-    return (
-        <div className="p-8 max-w-6xl mx-auto text-gray-300">
-            <h1 className="text-3xl font-black mb-8 text-white tracking-tight">Account Control Center</h1>
+    const showToast = (text, type) => {
+        setMessage({ text, type });
+        setTimeout(() => setMessage({ text: '', type: '' }), 4000);
+    };
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                {/* Left Section: Account Snapshot */}
-                <div className="bg-[#1E1E1E] rounded-2xl shadow-xl p-6 h-fit border-t-4 border-[#00FF66]">
-                    <h2 className="text-xl font-bold mb-4 text-white">Subscription Overview</h2>
-                    <div className="flex items-center justify-between mb-4">
-                        <span className="text-gray-400">Tier Status:</span>
-                        <span className="px-3 py-1 bg-[#00FF66]/10 text-[#00FF66] rounded-full text-sm font-bold border border-[#00FF66]/20">
-                            ACTIVE
-                        </span>
+    // --- SAVE PERSONAL DETAILS ---
+    const handleSaveProfile = async () => {
+        try {
+            await apiClient.put('/auth/profile', formData);
+            setProfile(formData); 
+            setIsEditing(false); 
+            showToast("Profile successfully updated!", 'success');
+            localStorage.setItem('userFirstName', formData.firstname);
+        } catch (error) {
+            showToast("Failed to update profile.", 'error');
+        }
+    };
+
+    // --- CHANGE PASSWORD ---
+    const handlePasswordChange = async (e) => {
+        e.preventDefault();
+        if (passwordData.newPassword !== passwordData.confirmPassword) {
+            showToast("New passwords do not match!", 'error');
+            return;
+        }
+
+        try {
+            const response = await apiClient.put('/auth/password', {
+                currentPassword: passwordData.currentPassword,
+                newPassword: passwordData.newPassword
+            });
+            showToast(response.data.message, 'success');
+            setIsChangingPassword(false);
+            setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+        } catch (error) {
+            showToast(error.response?.data?.error || "Failed to change password.", 'error');
+        }
+    };
+
+    // --- DANGER ZONE (DELETE ACCOUNT) ---
+    const handleDeleteAccount = async () => {
+        const confirmation = window.prompt("This action CANNOT be undone. Type 'DELETE' to confirm account closure.");
+        if (confirmation !== 'DELETE') {
+            showToast("Account deletion canceled.", 'success');
+            return;
+        }
+
+        try {
+            await apiClient.delete('/auth/account');
+            alert("Your account has been deleted. We are sorry to see you go!");
+            localStorage.clear();
+            navigate('/login');
+        } catch (error) {
+            showToast(error.response?.data?.error || "Failed to delete account.", 'error');
+        }
+    };
+
+    if (loading) return <div className="text-[#A0AEC0] p-8">Loading profile...</div>;
+
+    return (
+        <div className="bg-[#121212] min-h-screen text-white p-8 font-sans">
+            <h1 className="text-2xl font-bold mb-1">My Profile</h1>
+            <p className="text-gray-400 text-sm mb-8">Manage your personal information and security.</p>
+
+            {/* Toast Notification */}
+            {message.text && (
+                <div className={`fixed top-8 right-8 z-50 px-6 py-4 rounded-xl font-bold shadow-2xl transition-all ${message.type === 'success' ? 'bg-[#00FF66] text-black' : 'bg-red-500 text-white'}`}>
+                    {message.text}
+                </div>
+            )}
+
+            <div className="grid grid-cols-1 gap-8 max-w-3xl">
+                
+                {/* --- 1. PERSONAL DETAILS SECTION --- */}
+                <div className="bg-[#1E1E1E] p-8 rounded-2xl border border-gray-800">
+                    <div className="flex justify-between items-center mb-6 border-b border-gray-800 pb-4">
+                        <h2 className="text-lg font-bold">Personal Details</h2>
+                        {!isEditing ? (
+                            <button onClick={() => setIsEditing(true)} className="text-[#00FF66] border border-[#00FF66] px-4 py-1.5 rounded-lg text-sm font-bold hover:bg-[#00FF66] hover:text-black transition">
+                                Edit Profile
+                            </button>
+                        ) : (
+                            <div className="flex gap-3">
+                                <button onClick={() => { setIsEditing(false); setFormData(profile); }} className="text-gray-400 hover:text-white text-sm font-bold transition">Cancel</button>
+                                <button onClick={handleSaveProfile} className="bg-[#00FF66] text-black px-4 py-1.5 rounded-lg text-sm font-bold hover:bg-green-500 transition">Save Changes</button>
+                            </div>
+                        )}
                     </div>
-                    <div className="flex items-center justify-between mb-4">
-                        <span className="text-gray-400">Identity Role:</span>
-                        <span className="text-sm text-gray-300 bg-[#121212] px-3 py-1 rounded-md font-mono border border-gray-800">
-                            {user?.role || 'USER'}
-                        </span>
+
+                    <div className="grid grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">First Name</label>
+                            {isEditing ? (
+                                <input type="text" name="firstname" value={formData.firstname} onChange={(e) => setFormData({...formData, firstname: e.target.value})} className="w-full bg-[#121212] border border-gray-800 text-white rounded-lg py-2 px-4 focus:outline-none focus:border-[#00FF66]" />
+                            ) : <p className="text-lg font-medium">{profile.firstname}</p>}
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Last Name</label>
+                            {isEditing ? (
+                                <input type="text" name="lastname" value={formData.lastname} onChange={(e) => setFormData({...formData, lastname: e.target.value})} className="w-full bg-[#121212] border border-gray-800 text-white rounded-lg py-2 px-4 focus:outline-none focus:border-[#00FF66]" />
+                            ) : <p className="text-lg font-medium">{profile.lastname}</p>}
+                        </div>
                     </div>
-                    <hr className="my-5 border-gray-800" />
-                    <button className="w-full bg-[#121212] hover:bg-gray-800 text-white border border-gray-700 font-semibold py-3 rounded-xl transition-all duration-200 text-sm">
-                        Verify via PayMongo Secure
-                    </button>
+                    <div>
+                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Email Address</label>
+                        {isEditing ? (
+                            <input type="email" name="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} className="w-full bg-[#121212] border border-gray-800 text-white rounded-lg py-2 px-4 focus:outline-none focus:border-[#00FF66]" />
+                        ) : <p className="text-lg font-medium">{profile.email}</p>}
+                    </div>
                 </div>
 
-                {/* Right Section: Core Tabs */}
-                <div className="md:col-span-2 bg-[#1E1E1E] rounded-2xl shadow-xl p-6">
-                    <div className="flex border-b border-gray-800 mb-6 space-x-6">
-                        <button 
-                            className={`pb-3 px-2 font-bold transition-all duration-200 ${activeTab === 'details' ? 'border-b-2 border-[#00FF66] text-[#00FF66]' : 'text-gray-500 hover:text-gray-300'}`}
-                            onClick={() => setActiveTab('details')}
-                        >
-                            Personal Profile
-                        </button>
-                        <button 
-                            className={`pb-3 px-2 font-bold transition-all duration-200 ${activeTab === 'settings' ? 'border-b-2 border-[#00FF66] text-[#00FF66]' : 'text-gray-500 hover:text-gray-300'}`}
-                            onClick={() => setActiveTab('settings')}
-                        >
-                            System Settings
-                        </button>
+                {/* --- 2. SECURITY SECTION --- */}
+                <div className="bg-[#1E1E1E] p-8 rounded-2xl border border-gray-800">
+                    <div className="flex justify-between items-center mb-6 border-b border-gray-800 pb-4">
+                        <h2 className="text-lg font-bold">Security</h2>
+                        {!isChangingPassword ? (
+                            <button onClick={() => setIsChangingPassword(true)} className="text-[#00FF66] border border-[#00FF66] px-4 py-1.5 rounded-lg text-sm font-bold hover:bg-[#00FF66] hover:text-black transition">
+                                Change Password
+                            </button>
+                        ) : (
+                            <button onClick={() => setIsChangingPassword(false)} className="text-gray-400 hover:text-white text-sm font-bold transition">Cancel</button>
+                        )}
                     </div>
 
-                    {activeTab === 'details' ? (
-                        <form onSubmit={handleSave} className="space-y-5">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    {isChangingPassword ? (
+                        <form onSubmit={handlePasswordChange} className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Current Password</label>
+                                <input type="password" required value={passwordData.currentPassword} onChange={(e) => setPasswordData({...passwordData, currentPassword: e.target.value})} className="w-full bg-[#121212] border border-gray-800 text-white rounded-lg py-2 px-4 focus:outline-none focus:border-[#00FF66]" />
+                            </div>
+                            <div className="grid grid-cols-2 gap-6">
                                 <div>
-                                    <label className="block text-xs font-bold text-gray-400 uppercase mb-2 tracking-wider">First Name</label>
-                                    <input type="text" className="w-full p-3 rounded-xl bg-[#121212] border border-gray-800 text-gray-500 outline-none cursor-not-allowed" value={user?.firstName || 'Xavier'} readOnly />
+                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">New Password</label>
+                                    <input type="password" required minLength="6" value={passwordData.newPassword} onChange={(e) => setPasswordData({...passwordData, newPassword: e.target.value})} className="w-full bg-[#121212] border border-gray-800 text-white rounded-lg py-2 px-4 focus:outline-none focus:border-[#00FF66]" />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold text-gray-400 uppercase mb-2 tracking-wider">Last Name</label>
-                                    <input type="text" className="w-full p-3 rounded-xl bg-[#121212] border border-gray-800 text-gray-500 outline-none cursor-not-allowed" value={user?.lastName || 'Fernandez'} readOnly />
+                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Confirm New Password</label>
+                                    <input type="password" required minLength="6" value={passwordData.confirmPassword} onChange={(e) => setPasswordData({...passwordData, confirmPassword: e.target.value})} className="w-full bg-[#121212] border border-gray-800 text-white rounded-lg py-2 px-4 focus:outline-none focus:border-[#00FF66]" />
                                 </div>
                             </div>
-
-                            <div>
-                                <label className="block text-xs font-bold text-gray-400 uppercase mb-2 tracking-wider">Registered Email</label>
-                                <input type="email" className="w-full p-3 rounded-xl bg-[#121212] border border-gray-800 text-gray-500 outline-none cursor-not-allowed" value={user?.email || 'xavier@goatedmeals.com'} readOnly />
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-bold text-gray-400 uppercase mb-2 tracking-wider">Contact Number</label>
-                                <input 
-                                    type="tel" 
-                                    className="w-full p-3 rounded-xl bg-[#121212] border border-gray-700 text-white focus:border-[#00FF66] focus:ring-1 focus:ring-[#00FF66] outline-none transition-all" 
-                                    placeholder="+63 900 000 0000"
-                                    value={profileData.phone}
-                                    onChange={(e) => setProfileData({...profileData, phone: e.target.value})} 
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-bold text-gray-400 uppercase mb-2 tracking-wider">Primary Delivery Target Address</label>
-                                <textarea 
-                                    className="w-full p-3 rounded-xl bg-[#121212] border border-gray-700 text-white focus:border-[#00FF66] focus:ring-1 focus:ring-[#00FF66] outline-none resize-none transition-all" 
-                                    rows="3"
-                                    placeholder="Enter full delivery specifications..."
-                                    value={profileData.defaultAddress}
-                                    onChange={(e) => setProfileData({...profileData, defaultAddress: e.target.value})}
-                                ></textarea>
-                            </div>
-
-                            <div className="flex justify-end pt-4">
-                                <button 
-                                    type="submit" 
-                                    disabled={loading}
-                                    className="bg-[#00FF66] hover:bg-[#00cc52] text-black font-bold py-3 px-8 rounded-xl shadow-[0_0_15px_rgba(0,255,102,0.2)] transition-all text-sm"
-                                >
-                                    {loading ? 'Processing...' : 'Commit Save'}
-                                </button>
+                            <div className="pt-2">
+                                <button type="submit" className="bg-[#00FF66] text-black px-6 py-2 rounded-lg font-bold hover:bg-green-500 transition">Update Password</button>
                             </div>
                         </form>
                     ) : (
-                        <div className="space-y-8 py-2">
-                            <div>
-                                <h3 className="text-base font-bold text-white mb-1">System Language</h3>
-                                <p className="text-sm text-gray-500 mb-3">Configure localization preferences.</p>
-                                <select className="p-3 w-full sm:w-auto rounded-xl bg-[#121212] border border-gray-700 text-white outline-none focus:border-[#00FF66] focus:ring-1 focus:ring-[#00FF66]">
-                                    <option>English (US)</option>
-                                    <option>Filipino</option>
-                                </select>
-                            </div>
-                            <div className="border-t border-gray-800 pt-6">
-                                <h3 className="text-base font-bold text-red-500 mb-1">Danger Zone</h3>
-                                <p className="text-sm text-gray-500 mb-4">Irreversibly remove account access data from Goated Meals database layers.</p>
-                                <button type="button" className="bg-transparent border border-red-500/50 hover:bg-red-500/10 text-red-500 font-bold py-3 px-6 rounded-xl text-sm transition-all">
-                                    Deactivate Session Profile
-                                </button>
-                            </div>
-                        </div>
+                        <p className="text-gray-400 text-sm">Ensure your account is using a long, random password to stay secure.</p>
                     )}
                 </div>
+
+                {/* --- 3. DANGER ZONE --- */}
+                <div className="bg-red-900/10 p-8 rounded-2xl border border-red-900/50">
+                    <h2 className="text-lg font-bold text-red-500 mb-2">Danger Zone</h2>
+                    <p className="text-gray-400 text-sm mb-6">Once you delete your account, there is no going back. All of your scheduled meals, credits, and subscription data will be permanently wiped.</p>
+                    <button onClick={handleDeleteAccount} className="border border-red-500 text-red-500 px-6 py-2 rounded-lg font-bold hover:bg-red-500 hover:text-white transition">
+                        Delete Account
+                    </button>
+                </div>
+
             </div>
         </div>
     );
-};
-
-export default Profile;
+}

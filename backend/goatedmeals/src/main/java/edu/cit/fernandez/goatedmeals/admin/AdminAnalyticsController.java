@@ -30,7 +30,8 @@ public class AdminAnalyticsController {
             long activeSubscribers = subscriptionRepository.countByStatus("ACTIVE");
             long totalOrders = mealScheduleRepository.count();
             long pendingDeliveries = mealScheduleRepository.countByStatus("SCHEDULED")
-                    + mealScheduleRepository.countByStatus("PREPARING");
+                    + mealScheduleRepository.countByStatus("PREPARING")
+                    + mealScheduleRepository.countByStatus("DELIVERING");
 
             // Calculate rough revenue (assuming each sub is 2500 PHP)
             long estimatedRevenue = activeSubscribers * 2500;

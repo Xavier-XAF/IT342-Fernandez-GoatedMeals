@@ -13,11 +13,26 @@ export default function Menu() {
   const [deliveryMethod, setDeliveryMethod] = useState('Delivery');
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const [selectedDate, setSelectedDate] = useState('');
+  
+  // NEW: Added state for Delivery Time
+  const [deliveryTime, setDeliveryTime] = useState('09:00 AM');
+  
   const [isBooking, setIsBooking] = useState(false);
   const [message, setMessage] = useState({ text: '', type: '' });
 
-  // Get today's date in YYYY-MM-DD format to set a minimum date on the calendar
   const today = new Date().toISOString().split('T')[0];
+
+  // NEW: Helper function to generate time slots from 9AM to 10PM
+  const generateTimeSlots = () => {
+    const slots = [];
+    for (let i = 9; i <= 22; i++) {
+      const hour = i > 12 ? i - 12 : i;
+      const ampm = i >= 12 ? 'PM' : 'AM';
+      slots.push(`${hour}:00 ${ampm}`);
+      if (i !== 22) slots.push(`${hour}:30 ${ampm}`); // Don't add 10:30 PM
+    }
+    return slots;
+  };
 
   useEffect(() => {
     const fetchMenuAndCredits = async () => {
@@ -64,8 +79,9 @@ export default function Menu() {
         { 
           mealId: selectedMeal.id, 
           deliveryDate: selectedDate,
+          deliveryTime: deliveryTime, // NEW: Pushing the time to Spring Boot
           deliveryMethod: deliveryMethod,
-          deliveryAddress: deliveryMethod === 'Pickup' ? 'N/A' : deliveryAddress
+          deliveryAddress: deliveryMethod === 'Pickup' ? 'Goated Meals Ph, Lahug, Cebu City' : deliveryAddress
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -73,11 +89,11 @@ export default function Menu() {
       setAvailableCredits(response.data.remainingCredits);
       setMessage({ text: "Meal successfully scheduled!", type: 'success' });
       
-      // Close modal and clean up
       setTimeout(() => {
         setMessage({ text: '', type: '' });
         setSelectedMeal(null);
         setSelectedDate('');
+        setDeliveryTime('09:00 AM'); // Reset time
         setDeliveryAddress('');
       }, 2000);
 
@@ -125,7 +141,6 @@ export default function Menu() {
             onClick={() => setSelectedMeal(meal)}
             className="bg-[#1E1E1E] rounded-2xl border border-gray-800 overflow-hidden flex flex-col hover:border-[#00FF66] transition-colors cursor-pointer group relative"
           >
-            {/* Hover Overlay */}
             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity z-10 flex items-center justify-center">
               <span className="bg-[#00FF66] text-black font-bold px-6 py-2 rounded-full transform translate-y-4 group-hover:translate-y-0 transition-all">Select Meal</span>
             </div>
@@ -142,12 +157,11 @@ export default function Menu() {
         ))}
       </div>
 
-      {/* --- SDD STYLED MODAL --- */}
+      {/* --- MODAL --- */}
       {selectedMeal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
           <div className="bg-[#121212] border border-gray-800 rounded-2xl max-w-4xl w-full flex flex-col md:flex-row overflow-hidden shadow-2xl relative">
             
-            {/* Close Button */}
             <button 
               onClick={() => setSelectedMeal(null)}
               className="absolute top-4 right-4 w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-700 z-20 transition"
@@ -155,7 +169,6 @@ export default function Menu() {
               ✕
             </button>
 
-            {/* Left Side: Image */}
             <div className="md:w-1/2 relative h-64 md:h-auto bg-gray-900">
               <img src={selectedMeal.imageUrl || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c"} alt={selectedMeal.name} className="w-full h-full object-cover" />
               <div className="absolute bottom-4 left-4 flex gap-2">
@@ -164,12 +177,10 @@ export default function Menu() {
               </div>
             </div>
 
-            {/* Right Side: Content */}
             <div className="md:w-1/2 p-8 overflow-y-auto max-h-[90vh]">
               <h2 className="text-2xl font-bold text-white mb-2">{selectedMeal.name}</h2>
               <p className="text-gray-400 text-sm mb-6">{selectedMeal.description}</p>
 
-              {/* Nutrition Info Mockup (Matches SDD) */}
               <div className="grid grid-cols-3 gap-3 mb-8">
                 <div className="bg-[#1E1E1E] rounded-xl p-3 text-center border border-gray-800">
                   <span className="text-orange-500 mb-1 block">🔥</span>
@@ -188,7 +199,6 @@ export default function Menu() {
                 </div>
               </div>
 
-              {/* Delivery Method Toggle */}
               <div className="mb-6">
                 <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2">🚚 Delivery Method</h3>
                 <div className="flex gap-4">
@@ -207,7 +217,6 @@ export default function Menu() {
                 </div>
               </div>
 
-              {/* Address Input (Only visible if Delivery is selected) */}
               {deliveryMethod === 'Delivery' && (
                 <div className="mb-6">
                   <p className="text-xs text-gray-500 mb-2 font-bold uppercase tracking-wider">Delivery Address</p>
@@ -224,23 +233,36 @@ export default function Menu() {
                 </div>
               )}
 
-              {/* Date Selection with Native Calendar Picker */}
-              <div className="mb-8">
-                <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2">📅 Select Delivery Date</h3>
-                <div className="relative">
+              {/* NEW: Date & Time Selection Split Row */}
+              <div className="mb-8 flex gap-4">
+                <div className="flex-1">
+                  <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2">📅 Date</h3>
                   <input 
                     type="date" 
-                    min={today} // Prevents selecting past dates
+                    min={today} 
                     value={selectedDate}
                     onChange={(e) => setSelectedDate(e.target.value)}
                     required
-                    // The [color-scheme:dark] class forces the native calendar popup to match your dark theme
                     className="w-full bg-[#1E1E1E] border border-gray-800 text-white rounded-xl py-3 px-4 text-sm focus:outline-none focus:border-[#00FF66] transition cursor-pointer [color-scheme:dark]"
                   />
                 </div>
+                
+                <div className="flex-1">
+                  <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2">⏰ Time</h3>
+                  <select
+                    value={deliveryTime}
+                    onChange={(e) => setDeliveryTime(e.target.value)}
+                    className="w-full bg-[#1E1E1E] border border-gray-800 text-white rounded-xl py-3 px-4 text-sm focus:outline-none focus:border-[#00FF66] transition cursor-pointer"
+                  >
+                    {generateTimeSlots().map(time => (
+                      <option key={time} value={time} style={{ background: '#1E1E1E', color: 'white' }}>
+                        {time}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
-              {/* Submit Button */}
               <button 
                 onClick={handleBookMeal}
                 disabled={availableCredits <= 0 || isBooking}
