@@ -10,4 +10,6 @@ public interface MealScheduleRepository extends JpaRepository<MealSchedule, Long
     List<MealSchedule> findByStatus(String status);
 
     long countByStatus(String status);
+
+    List<MealSchedule> findByUserId(Long userId);
 }
