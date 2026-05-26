@@ -18,9 +18,23 @@
         <activity
             android:name=".HomeActivity"
             android:exported="false" />
+        <activity android:name=".ScheduleActivity" />
+        <activity android:name=".MyScheduleActivity" />
+        <activity android:name=".ProfileActivity" />
         <activity
-            android:name=".RegisterActivity"
-            android:exported="false" />
+            android:name=".BillingActivity"
+            android:exported="true">
+
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="goatedmeals"
+                    android:host="billing" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".RegisterActivity" />
         <activity
             android:name=".MainActivity"
             android:exported="true">

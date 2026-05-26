@@ -14,60 +14,74 @@ import retrofit2.Callback
 import retrofit2.Response
 
 class RegisterActivity : AppCompatActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_register)
 
-        val etFirst = findViewById<EditText>(R.id.etFirstName)
-        val etLast = findViewById<EditText>(R.id.etLastName)
-        val etEmail = findViewById<EditText>(R.id.etEmail)
-        val etContact = findViewById<EditText>(R.id.etContact)
-        val etPassword = findViewById<EditText>(R.id.etPassword)
-        val etConfirm = findViewById<EditText>(R.id.etConfirmPassword)
-        val btnRegister = findViewById<Button>(R.id.btnRegister)
-        val tvLoginLink = findViewById<TextView>(R.id.tvLoginLink)
+        // 1. Hook into your EXACT XML UI elements
+        val etFirstname = findViewById<EditText>(R.id.etFirstname)
+        val etLastname = findViewById<EditText>(R.id.etLastname)
+        val etEmail = findViewById<EditText>(R.id.etRegEmail)
+        val etContactNumber = findViewById<EditText>(R.id.etContactNumber)
+        val etPassword = findViewById<EditText>(R.id.etRegPassword)
+        val btnRegister = findViewById<Button>(R.id.btnRegisterAccount)
+        val tvLoginRedirect = findViewById<TextView>(R.id.tvLoginRedirect)
 
+        // 2. Handle the Register button click
         btnRegister.setOnClickListener {
-            val first = etFirst.text.toString().trim()
-            val last = etLast.text.toString().trim()
+            val firstname = etFirstname.text.toString().trim()
+            val lastname = etLastname.text.toString().trim()
             val email = etEmail.text.toString().trim()
-            val contact = etContact.text.toString().trim()
-            val pass = etPassword.text.toString().trim()
-            val confirm = etConfirm.text.toString().trim()
+            val password = etPassword.text.toString()
+            val contactNumber = etContactNumber.text.toString().trim()
 
-            // 1. Frontend Validation
-            if (first.isEmpty() || last.isEmpty() || email.isEmpty() || contact.isEmpty() || pass.isEmpty()) {
-                Toast.makeText(this, "Please fill all fields", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-            if (pass != confirm) {
-                Toast.makeText(this, "Passwords do not match", Toast.LENGTH_SHORT).show()
+            // --- NEW: Input Validation to protect your backend! ---
+            if (firstname.isEmpty() || lastname.isEmpty() || email.isEmpty() || password.isEmpty() || contactNumber.isEmpty()) {
+                Toast.makeText(this, "Please fill out all fields", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
-            // 2. Package the data for Spring Boot
-            val request = RegisterRequest(first, last, email, contact, pass)
+            if (password.length < 6) {
+                Toast.makeText(this, "Password must be at least 6 characters", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            // ------------------------------------------------------
 
-            // 3. Send over Retrofit
-            RetrofitClient.instance.registerUser(request).enqueue(object : Callback<AuthResponse> {
+            btnRegister.isEnabled = false
+            btnRegister.text = "Creating Account..."
+
+            // 3. Create your custom RegisterRequest
+            val request = RegisterRequest(firstname, lastname, email, password, contactNumber)
+
+            // 4. Send the network request
+            RetrofitClient.getInstance(this).registerUser(request).enqueue(object : Callback<AuthResponse> {
                 override fun onResponse(call: Call<AuthResponse>, response: Response<AuthResponse>) {
+                    btnRegister.isEnabled = true
+                    btnRegister.text = "Register"
+
                     if (response.isSuccessful && response.body()?.success == true) {
-                        Toast.makeText(this@RegisterActivity, "Registration Successful!", Toast.LENGTH_LONG).show()
-                        // Automatically go back to Login screen
+                        Toast.makeText(this@RegisterActivity, "Account created successfully!", Toast.LENGTH_LONG).show()
+
+                        // Teleport back to the login screen
                         finish()
                     } else {
-                        Toast.makeText(this@RegisterActivity, "Registration Failed: Email may exist", Toast.LENGTH_LONG).show()
+                        // Usually means the email is already taken
+                        val errorMsg = response.body()?.message ?: "Registration failed. Email might be in use."
+                        Toast.makeText(this@RegisterActivity, errorMsg, Toast.LENGTH_LONG).show()
                     }
                 }
 
                 override fun onFailure(call: Call<AuthResponse>, t: Throwable) {
-                    Toast.makeText(this@RegisterActivity, "Network Error: ${t.message}", Toast.LENGTH_LONG).show()
+                    btnRegister.isEnabled = true
+                    btnRegister.text = "Register"
+                    Toast.makeText(this@RegisterActivity, "Connection Error: ${t.message}", Toast.LENGTH_LONG).show()
                 }
             })
         }
 
-        // Return to login screen if they click the bottom link
-        tvLoginLink.setOnClickListener {
+        // 5. Return to Login screen if they already have an account
+        tvLoginRedirect.setOnClickListener {
             finish()
         }
     }
