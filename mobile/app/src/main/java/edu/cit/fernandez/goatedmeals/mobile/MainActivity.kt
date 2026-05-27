@@ -138,9 +138,14 @@ class MainActivity : AppCompatActivity() {
 
     // --- NEW: Helper Function placed OUTSIDE of onCreate ---
     private fun sendGoogleTokenToBackend(idToken: String) {
-        val request = GoogleLoginRequest(idToken)
+        // 1. Use the EXACT SAME LoginRequest, just with different fields!
+        val request = LoginRequest(
+            loginType = "GOOGLE",
+            googleIdToken = idToken
+        )
 
-        RetrofitClient.getInstance(this).googleLogin(request).enqueue(object : Callback<AuthResponse> {
+        // 2. Aim it at your EXACT SAME login endpoint!
+        RetrofitClient.getInstance(this).loginUser(request).enqueue(object : Callback<AuthResponse> {
             override fun onResponse(call: Call<AuthResponse>, response: Response<AuthResponse>) {
                 if (response.isSuccessful && response.body()?.success == true) {
 
@@ -154,7 +159,6 @@ class MainActivity : AppCompatActivity() {
                         editor.putString("jwt_token", token)
                     }
 
-                    // Save the email and role returned from your Spring Boot backend
                     val email = response.body()?.data?.user?.email
                     if (email != null) {
                         editor.putString("userEmail", email)

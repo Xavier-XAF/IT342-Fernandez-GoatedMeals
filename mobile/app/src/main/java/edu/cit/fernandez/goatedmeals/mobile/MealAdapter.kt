@@ -30,10 +30,17 @@ class MealAdapter(private val mealList: List<Meal>) : RecyclerView.Adapter<MealA
         val meal = mealList[position]
 
         holder.tvMealName.text = meal.name
-        holder.tvMealPrice.text = "₱${meal.price}"
         holder.tvMealDescription.text = meal.description
 
-        // NEW: Tell Glide to load the URL into the ImageView
+        // --- NEW: Display Credits instead of PHP currency! ---
+        holder.tvMealPrice.text = "1 Credit"
+
+        // Tell Glide to load the URL into the ImageView
+        // We use clearColorFilter() to remove the grey tint we added to the placeholder in XML
+        // 1. Remove the grey XML tint so the image colors can shine through!
+        holder.ivMealImage.clearColorFilter()
+
+        // 2. Tell Glide to load the URL into the ImageView
         Glide.with(holder.itemView.context)
             .load(meal.imageUrl)
             .placeholder(android.R.drawable.ic_menu_gallery) // Shows while loading

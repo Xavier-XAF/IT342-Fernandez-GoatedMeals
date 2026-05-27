@@ -1,9 +1,11 @@
 package edu.cit.fernandez.goatedmeals.mobile
 
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.widget.Button
+import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -14,20 +16,33 @@ import retrofit2.Response
 
 class BillingActivity : AppCompatActivity() {
 
-    private lateinit var tvCurrentCredits: TextView
+    // New Premium Card UI elements
+    private lateinit var tvPlanName: TextView
+    private lateinit var tvPlanStatus: TextView
+    private lateinit var tvRenewalDate: TextView
+    private lateinit var tvCredits: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_billing)
 
-        tvCurrentCredits = findViewById(R.id.tvCurrentCredits)
+        // Bind UI Elements
+        val btnBack = findViewById<ImageView>(R.id.btnBack)
+        tvPlanName = findViewById(R.id.tvPlanName)
+        tvPlanStatus = findViewById(R.id.tvPlanStatus)
+        tvRenewalDate = findViewById(R.id.tvRenewalDate)
+        tvCredits = findViewById(R.id.tvCredits)
+
         val btnWeekly = findViewById<Button>(R.id.btnWeeklyPlan)
         val btnMonthly = findViewById<Button>(R.id.btnMonthlyPlan)
 
-        // 1. Fetch current credits on load
+        // Close the screen when tapping Back
+        btnBack.setOnClickListener { finish() }
+
+        // Fetch current credits on load
         fetchSubscriptionStatus()
 
-        // 2. Setup Purchase Buttons
+        // Setup PayMongo Purchase Buttons
         btnWeekly.setOnClickListener {
             initiateCheckout("WEEKLY", 1490.00, btnWeekly)
         }
@@ -44,18 +59,38 @@ class BillingActivity : AppCompatActivity() {
     }
 
     private fun fetchSubscriptionStatus() {
-        RetrofitClient.getInstance(this).getMySubscription().enqueue(object : Callback<SubscriptionResponse> {
-            override fun onResponse(call: Call<SubscriptionResponse>, response: Response<SubscriptionResponse>) {
-                if (response.isSuccessful && response.body() != null) {
-                    val credits = response.body()!!.availableCredits
-                    tvCurrentCredits.text = "Available Credits: $credits"
+        val sharedPreferences = getSharedPreferences("GoatedMealsPrefs", Context.MODE_PRIVATE)
+        val token = sharedPreferences.getString("jwt_token", null)
+
+        if (token != null) {
+            val authHeader = "Bearer $token"
+
+            RetrofitClient.getInstance(this).getMySubscription(authHeader).enqueue(object : Callback<SubscriptionResponse> {
+                override fun onResponse(call: Call<SubscriptionResponse>, response: Response<SubscriptionResponse>) {
+                    if (response.isSuccessful && response.body() != null) {
+                        val sub = response.body()!!
+
+                        // Update the Premium Hero Card
+                        if (sub.hasSubscription && sub.planTier != null) {
+                            tvPlanName.text = "${sub.planTier} Plan"
+                            tvPlanStatus.text = "STATUS: ${sub.status?.uppercase() ?: "ACTIVE"}"
+                        } else {
+                            tvPlanName.text = "No Active Plan"
+                            tvPlanStatus.text = "STATUS: INACTIVE"
+                            tvPlanStatus.setTextColor(android.graphics.Color.parseColor("#FF5252")) // Red if inactive
+                        }
+
+                        tvCredits.text = sub.availableCredits.toString()
+                        tvRenewalDate.text = "Next renewal: ${sub.nextRenewalDate ?: "--"}"
+                    }
                 }
-            }
-            override fun onFailure(call: Call<SubscriptionResponse>, t: Throwable) {
-                tvCurrentCredits.text = "Available Credits: Error"
-            }
-        })
-    }
+                override fun onFailure(call: Call<SubscriptionResponse>, t: Throwable) {
+                    tvPlanName.text = "Offline Mode"
+                    tvCredits.text = "Error"
+                }
+            })
+        } // <-- This was the missing closing brace for the 'if' statement!
+    } // <-- This was the missing closing brace for the 'fetchSubscriptionStatus' function!
 
     private fun initiateCheckout(planTier: String, amount: Double, clickedButton: Button) {
         clickedButton.isEnabled = false
@@ -72,7 +107,6 @@ class BillingActivity : AppCompatActivity() {
                     val checkoutUrl = response.body()?.data?.checkoutUrl
 
                     if (checkoutUrl != null) {
-                        // THIS IS THE MAGIC: Open the URL in the phone's web browser!
                         val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse(checkoutUrl))
                         startActivity(browserIntent)
                     }

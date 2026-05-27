@@ -4,7 +4,9 @@ package edu.cit.fernandez.goatedmeals.mobile.api
 data class SubscriptionResponse(
     val hasSubscription: Boolean,
     val planTier: String?,
-    val availableCredits: Int
+    val availableCredits: Int,
+    val status: String? = null,
+    val nextRenewalDate: String? = null
 )
 
 // For POST /api/v1/subscriptions/pay

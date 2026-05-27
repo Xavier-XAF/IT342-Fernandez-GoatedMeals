@@ -7,5 +7,7 @@ data class Meal(
     val price: Double,
     val imageUrl: String?,
     val category: String?,
-    val isAvailable: Boolean = true
+    val isAvailable: Boolean = true,
+    val calories: Int,
+    val protein: Int
 )

@@ -4,6 +4,7 @@ import retrofit2.Call
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
+import retrofit2.http.Header
 import retrofit2.http.POST
 import retrofit2.http.Path
 
@@ -23,8 +24,9 @@ interface AuthApiService {
     fun bookMeal(@Body request: ScheduleRequest): Call<ScheduleResponse>
 
     // Check current subscription status
+    // Check current subscription status
     @GET("subscriptions/me")
-    fun getMySubscription(): Call<SubscriptionResponse>
+    fun getMySubscription(@Header("Authorization") token: String): Call<SubscriptionResponse>
 
     // Generate PayMongo Checkout URL
     @POST("subscriptions/pay")
@@ -38,7 +40,7 @@ interface AuthApiService {
 
     // Fetch Current Logged-In User Profile
     @GET("auth/me")
-    fun getCurrentUser(): Call<UserProfileResponse>
+    fun getCurrentUser(@Header("Authorization") token: String): Call<UserProfileResponse>
 
     @POST("auth/google")
     fun googleLogin(@Body request: GoogleLoginRequest): Call<AuthResponse>
