@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#121212"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <TextView
+        android:id="@+id/tvScheduleTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Schedule Meal"
+        android:textColor="#00FF66"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="24dp"/>
+
+    <EditText
+        android:id="@+id/etDeliveryDate"
+        android:layout_width="match_parent"
+        android:layout_height="55dp"
+        android:hint="Tap to select Date"
+        android:textColorHint="#A0AEC0"
+        android:textColor="#FFFFFF"
+        android:background="#1E1E1E"
+        android:padding="16dp"
+        android:focusable="false"
+        android:clickable="true"
+        android:layout_marginBottom="16dp"/>
+
+    <EditText
+        android:id="@+id/etDeliveryTime"
+        android:layout_width="match_parent"
+        android:layout_height="55dp"
+        android:hint="Tap to select Time"
+        android:textColorHint="#A0AEC0"
+        android:textColor="#FFFFFF"
+        android:background="#1E1E1E"
+        android:padding="16dp"
+        android:focusable="false"
+        android:clickable="true"
+        android:layout_marginBottom="16dp"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Delivery Method:"
+        android:textColor="#A0AEC0"
+        android:layout_marginBottom="4dp"/>
+
+    <Spinner
+        android:id="@+id/spinnerMethod"
+        android:layout_width="match_parent"
+        android:layout_height="55dp"
+        android:background="#1E1E1E"
+        android:layout_marginBottom="16dp"/>
+
+    <EditText
+        android:id="@+id/etDeliveryAddress"
+        android:layout_width="match_parent"
+        android:layout_height="55dp"
+        android:hint="Full Address"
+        android:textColorHint="#A0AEC0"
+        android:textColor="#FFFFFF"
+        android:background="#1E1E1E"
+        android:padding="16dp"
+        android:layout_marginBottom="32dp"/>
+
+    <Button
+        android:id="@+id/btnConfirmSchedule"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:text="Confirm Booking"
+        android:textColor="#121212"
+        android:backgroundTint="#00FF66"
+        android:textSize="18sp"
+        android:textStyle="bold"/>
+</LinearLayout>

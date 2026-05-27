@@ -10,7 +10,7 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:padding="32dp"
-        android:gravity="center">
+        android:gravity="center_horizontal">
 
         <TextView
             android:layout_width="wrap_content"
@@ -19,25 +19,79 @@
             android:textColor="#00FF66"
             android:textSize="32sp"
             android:textStyle="bold"
+            android:layout_marginTop="24dp"
             android:layout_marginBottom="8dp"/>
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Join Goated Meals today!"
+            android:text="Join Goated Meals today"
             android:textColor="#A0AEC0"
             android:textSize="16sp"
             android:layout_marginBottom="32dp"/>
 
-        <EditText android:id="@+id/etFirstName" android:layout_width="match_parent" android:layout_height="55dp" android:hint="First Name" android:textColorHint="#A0AEC0" android:textColor="#FFFFFF" android:background="#1E1E1E" android:padding="16dp" android:inputType="textPersonName" android:layout_marginBottom="16dp"/>
-        <EditText android:id="@+id/etLastName" android:layout_width="match_parent" android:layout_height="55dp" android:hint="Last Name" android:textColorHint="#A0AEC0" android:textColor="#FFFFFF" android:background="#1E1E1E" android:padding="16dp" android:inputType="textPersonName" android:layout_marginBottom="16dp"/>
-        <EditText android:id="@+id/etEmail" android:layout_width="match_parent" android:layout_height="55dp" android:hint="Email Address" android:textColorHint="#A0AEC0" android:textColor="#FFFFFF" android:background="#1E1E1E" android:padding="16dp" android:inputType="textEmailAddress" android:layout_marginBottom="16dp"/>
-        <EditText android:id="@+id/etContact" android:layout_width="match_parent" android:layout_height="55dp" android:hint="Contact Number" android:textColorHint="#A0AEC0" android:textColor="#FFFFFF" android:background="#1E1E1E" android:padding="16dp" android:inputType="phone" android:layout_marginBottom="16dp"/>
-        <EditText android:id="@+id/etPassword" android:layout_width="match_parent" android:layout_height="55dp" android:hint="Password" android:textColorHint="#A0AEC0" android:textColor="#FFFFFF" android:background="#1E1E1E" android:padding="16dp" android:inputType="textPassword" android:layout_marginBottom="16dp"/>
-        <EditText android:id="@+id/etConfirmPassword" android:layout_width="match_parent" android:layout_height="55dp" android:hint="Confirm Password" android:textColorHint="#A0AEC0" android:textColor="#FFFFFF" android:background="#1E1E1E" android:padding="16dp" android:inputType="textPassword" android:layout_marginBottom="32dp"/>
+        <EditText
+            android:id="@+id/etFirstname"
+            android:layout_width="match_parent"
+            android:layout_height="55dp"
+            android:hint="First Name"
+            android:textColorHint="#A0AEC0"
+            android:textColor="#FFFFFF"
+            android:background="#1E1E1E"
+            android:padding="16dp"
+            android:inputType="textPersonName"
+            android:layout_marginBottom="16dp"/>
+
+        <EditText
+            android:id="@+id/etLastname"
+            android:layout_width="match_parent"
+            android:layout_height="55dp"
+            android:hint="Last Name"
+            android:textColorHint="#A0AEC0"
+            android:textColor="#FFFFFF"
+            android:background="#1E1E1E"
+            android:padding="16dp"
+            android:inputType="textPersonName"
+            android:layout_marginBottom="16dp"/>
+
+        <EditText
+            android:id="@+id/etRegEmail"
+            android:layout_width="match_parent"
+            android:layout_height="55dp"
+            android:hint="Email Address"
+            android:textColorHint="#A0AEC0"
+            android:textColor="#FFFFFF"
+            android:background="#1E1E1E"
+            android:padding="16dp"
+            android:inputType="textEmailAddress"
+            android:layout_marginBottom="16dp"/>
+
+        <EditText
+            android:id="@+id/etContactNumber"
+            android:layout_width="match_parent"
+            android:layout_height="55dp"
+            android:hint="Contact Number (Optional)"
+            android:textColorHint="#A0AEC0"
+            android:textColor="#FFFFFF"
+            android:background="#1E1E1E"
+            android:padding="16dp"
+            android:inputType="phone"
+            android:layout_marginBottom="16dp"/>
+
+        <EditText
+            android:id="@+id/etRegPassword"
+            android:layout_width="match_parent"
+            android:layout_height="55dp"
+            android:hint="Password"
+            android:textColorHint="#A0AEC0"
+            android:textColor="#FFFFFF"
+            android:background="#1E1E1E"
+            android:padding="16dp"
+            android:inputType="textPassword"
+            android:layout_marginBottom="32dp"/>
 
         <Button
-            android:id="@+id/btnRegister"
+            android:id="@+id/btnRegisterAccount"
             android:layout_width="match_parent"
             android:layout_height="60dp"
             android:text="Register"
@@ -48,13 +102,14 @@
             android:layout_marginBottom="24dp"/>
 
         <TextView
-            android:id="@+id/tvLoginLink"
+            android:id="@+id/tvLoginRedirect"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Already have an account? Login"
             android:textColor="#00FF66"
             android:textSize="15sp"
-            android:padding="8dp"/>
+            android:padding="8dp"
+            android:layout_marginBottom="32dp"/>
 
     </LinearLayout>
 </ScrollView>
